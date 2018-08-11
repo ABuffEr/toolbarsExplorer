@@ -2,7 +2,7 @@
 
 * Author: Alberto Buffolino
 <!-- * Download [stable version][1] -->
-* Download [development version](toolbarsExplorer-1.0-dev.nvda-addon)
+* Download [development version][2]
 
 This add-on makes easier to use toolbars in applications, providing an exploration model derived by object navigation, with simplified gestures.
 
@@ -19,3 +19,5 @@ Additionally, during exploration, you can perform actions on objects using any g
 ## Note
 
 Exploration terminates explicitly pressing escape, and implicitly performing an action on toolbar or its item.
+
+[2]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/toolbarsExplorer-1.0-dev.nvda-addon
