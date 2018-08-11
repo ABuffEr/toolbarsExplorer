@@ -13,7 +13,7 @@ import api
 import speech
 import controlTypes as ct
 import ui
-#from logHandler import log
+from logHandler import log
 import addonHandler
 addonHandler.initTranslation()
 
@@ -26,41 +26,70 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if isinstance(ancestor, WindowRoot):
 				root = ancestor
 				break
-		objList = [root]
 		bars = []
-		# some roles excluded to speed up toolbars searching
-		# we include ROLE_TOOLBAR under assumption that nested toolbar never occurs
-		excludedRoles = [ct.ROLE_MENUBAR, ct.ROLE_TOOLBAR, ct.ROLE_LIST, ct.ROLE_TREEVIEW, ct.ROLE_TABLE, ct.ROLE_DOCUMENT, ct.ROLE_DATAGRID]
+		# roles of objects that can contain a toolbar
+		promisingRoles = [ct.ROLE_WINDOW, ct.ROLE_PANE, ct.ROLE_DIALOG, ct.ROLE_FRAME, ct.ROLE_APPLICATION, ct.ROLE_BOX, ct.ROLE_GROUPING, ct.ROLE_PROPERTYPAGE, ct.ROLE_DIRECTORYPANE, ct.ROLE_GLASSPANE, ct.ROLE_INPUTWINDOW, ct.ROLE_PAGE, ct.ROLE_LAYEREDPANE, ct.ROLE_ROOTPANE, ct.ROLE_EDITBAR, ct.ROLE_TERMINAL, ct.ROLE_RICHEDIT, ct.ROLE_SCROLLPANE, ct.ROLE_SPLITPANE, ct.ROLE_VIEWPORT, ct.ROLE_TEXTFRAME, ct.ROLE_INTERNALFRAME, ct.ROLE_DESKTOPPANE, ct.ROLE_PANEL]
+		# for testing
+#		self.objCount = 0
+		with timeblock("recursiveSearch performed in"):
+			self.recursiveSearch(root, ct.ROLE_TOOLBAR, promisingRoles, bars)
+#		log.info("objCount=%d"%self.objCount)
+		# search gives bars in reverse order, so...
+		bars.reverse()
+		# we remove toolbars without children,
+		# or with menubar as first child, as in Mozilla applications,
+		# and assign numbered names to anonymous toolbars
+		fixedBars = []
+		for bar in bars:
+			child = bar.simpleFirstChild
+			if child and child.role != ct.ROLE_MENUBAR:
+				fixedBars.append(bar)
+				if not bar.name:
+					bar.name = ' '.join([NVDALocale("tool bar"), str(len(fixedBars))])
+		return fixedBars
+
+	# more efficient, used (see below)
+	def recursiveSearch(self, obj, matchRole, promisingRoles, resList):
+		"""performs a recursive search on object hierarchy."""
+		if obj.role == matchRole and obj not in resList:
+			resList.append(obj)
+		childObj = obj.simpleLastChild
+		if obj.role in promisingRoles and childObj:
+			self.recursiveSearch(childObj, matchRole, promisingRoles, resList)
+		prevObj = obj.simplePrevious
+		if prevObj and prevObj.appModule == obj.appModule:
+			self.recursiveSearch(prevObj, matchRole, promisingRoles, resList)
+		# for testing
+#		self.objCount += 1
+
+	# less efficient, not used
+	def nonrecursiveSearch(self, obj, matchRole, promisingRoles, resList):
+		"""performs a nonrecursive search on object hierarchy."""
+		objList = [obj]
+		rootAppModule = obj.appModule
 		stop = False
 		# breadth first search loop
 		while not stop:
-			newBars = filter(lambda obj: obj.role == ct.ROLE_TOOLBAR, objList)
-			bars.extend(newBars)
 			newObjList = []
 			for obj in objList:
-				if obj.role not in excludedRoles:
-					newObjList.extend(obj.children)
+				# for testing
+#				self.objCount += 1
+				if obj.role == matchRole:
+					resList.append(obj)
+				elif obj.role in promisingRoles:
+					obj = obj.simpleLastChild
+					while obj and obj.appModule == rootAppModule:
+						newObjList.append(obj)
+						obj = obj.simplePrevious
 			if newObjList:
 				objList = newObjList
 			else:
 				stop = True
-		# especially in Mozilla applications, first toolbar contains standard menubar,
-		# but we don't want it, so check and remove
-		if bars and bars[0].children:
-			obj = bars[0].children[0]
-			if obj.role == ct.ROLE_MENUBAR:
-				bars.pop(0)
-		# remove empty toolbars
-		bars = filter(lambda bar: bar.children, bars)
-		# assign numbered name to anonymous toolbars
-		for x in xrange(len(bars)):
-			bar = bars[x]
-			if not bar.name:
-				bar.name = ' '.join([NVDALocale("toolbar"), str(x+1)])
-		return bars
 
 	def script_startExploration(self, gesture):
-		self.bars = self.findToolbars()
+		# for testing
+		with timeblock("Toolbars found in"):
+			self.bars = self.findToolbars()
 		if not self.bars:
 			# Translators: message in applications without toolbars
 			ui.message(_("No toolbar found"))
@@ -149,3 +178,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	__gestures = {
 	"kb:alt+applications": "startExploration"
 	}
+
+# for testing
+from contextlib import contextmanager
+import time
+
+@contextmanager
+def timeblock(label):
+	start = time.clock()
+	try:
+		yield
+	finally:
+		end = time.clock()
+		log.info("{}: {}".format(label, end-start))
