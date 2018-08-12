@@ -8,6 +8,7 @@
 import globalPluginHandler
 from globalCommands import commands, SCRCAT_OBJECTNAVIGATION
 from NVDAObjects.IAccessible import WindowRoot
+from globalVars import desktopObject
 from msg import message as NVDALocale
 import api
 import speech
@@ -31,8 +32,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		promisingRoles = [ct.ROLE_WINDOW, ct.ROLE_PANE, ct.ROLE_DIALOG, ct.ROLE_FRAME, ct.ROLE_APPLICATION, ct.ROLE_BOX, ct.ROLE_GROUPING, ct.ROLE_PROPERTYPAGE, ct.ROLE_DIRECTORYPANE, ct.ROLE_GLASSPANE, ct.ROLE_INPUTWINDOW, ct.ROLE_PAGE, ct.ROLE_LAYEREDPANE, ct.ROLE_ROOTPANE, ct.ROLE_EDITBAR, ct.ROLE_TERMINAL, ct.ROLE_RICHEDIT, ct.ROLE_SCROLLPANE, ct.ROLE_SPLITPANE, ct.ROLE_VIEWPORT, ct.ROLE_TEXTFRAME, ct.ROLE_INTERNALFRAME, ct.ROLE_DESKTOPPANE, ct.ROLE_PANEL]
 		# for testing
 #		self.objCount = 0
-		with timeblock("recursiveSearch performed in"):
-			self.recursiveSearch(root, ct.ROLE_TOOLBAR, promisingRoles, bars)
+#		with timeblock("recursiveSearch performed in"):
+		self.recursiveSearch(root, ct.ROLE_TOOLBAR, promisingRoles, bars)
 #		log.info("objCount=%d"%self.objCount)
 		# search gives bars in reverse order, so...
 		bars.reverse()
@@ -48,43 +49,37 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					bar.name = ' '.join([NVDALocale("tool bar"), str(len(fixedBars))])
 		return fixedBars
 
-	# more efficient, used (see below)
 	def recursiveSearch(self, obj, matchRole, promisingRoles, resList):
 		"""performs a recursive search on object hierarchy."""
-		if obj.role == matchRole and obj not in resList:
+		if obj.role in promisingRoles: # and childObj:
+			childObj = obj.simpleLastChild
+			if childObj:
+				self.recursiveSearch(childObj, matchRole, promisingRoles, resList)
+		elif obj.role == matchRole: # and obj not in resList:
 			resList.append(obj)
-		childObj = obj.simpleLastChild
-		if obj.role in promisingRoles and childObj:
-			self.recursiveSearch(childObj, matchRole, promisingRoles, resList)
 		prevObj = obj.simplePrevious
-		if prevObj and prevObj.appModule == obj.appModule:
+		if prevObj and prevObj.simpleParent != desktopObject:
 			self.recursiveSearch(prevObj, matchRole, promisingRoles, resList)
 		# for testing
 #		self.objCount += 1
 
-	# less efficient, not used
 	def nonrecursiveSearch(self, obj, matchRole, promisingRoles, resList):
 		"""performs a nonrecursive search on object hierarchy."""
 		objList = [obj]
-		rootAppModule = obj.appModule
-		stop = False
 		# breadth first search loop
-		while not stop:
+		while objList:
 			newObjList = []
 			for obj in objList:
 				# for testing
 #				self.objCount += 1
-				if obj.role == matchRole:
-					resList.append(obj)
-				elif obj.role in promisingRoles:
+				if obj.role in promisingRoles:
 					obj = obj.simpleLastChild
-					while obj and obj.appModule == rootAppModule:
+					while obj and obj.simpleParent != desktopObject:
 						newObjList.append(obj)
 						obj = obj.simplePrevious
-			if newObjList:
-				objList = newObjList
-			else:
-				stop = True
+				elif obj.role == matchRole:
+					resList.append(obj)
+			objList = newObjList
 
 	def script_startExploration(self, gesture):
 		# for testing
@@ -103,6 +98,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# a initial object backup
 		self.startObj = api.getNavigatorObject()
 		self.barIndex = 0
+		# TODO: dinamically get barItems, without barItemIndex and barItems
 		self.barItemIndex = None
 		bar = self.bars[self.barIndex]
 		# get toolbar items, excluding separators
@@ -190,4 +186,4 @@ def timeblock(label):
 		yield
 	finally:
 		end = time.clock()
-		log.info("{}: {}".format(label, end-start))
+		log.info("%s: %.3f s"%(label, end-start))
