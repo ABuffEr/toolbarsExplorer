@@ -8,13 +8,19 @@ This add-on makes easier to use toolbars in applications, providing an explorati
 
 ## Commands
 
-* Alt+applications: starts toolbars exploration (you can remap it via NVDA gesture manager);
+* Alt+applications: starts toolbars exploration<br/>
+(you can remap it via NVDA gesture manager, under Object navigation).
+
+During exploration, following gestures are available:
+
 * Left/right arrow: moves to previous/next toolbar;
 * Up/down arrow: scrolls up/down items in current toolbar;
-* Space/enter: activates toolbar item;
+* Enter: activates toolbar or its item;
+* Space: simulates left mouse click on toolbar or its item;
+* Applications: simulates right mouse click on toolbar or its item;
 * Escape: exits from exploration.
 
-Additionally, during exploration, you can perform actions on objects using any gesture provided by NVDA, as exactly as when you move to objects with standard object navigation.
+Additionally, you can perform actions on toolbars or its items using any gesture provided by NVDA, as exactly as when you move to objects with standard object navigation.
 
 ## Note
 
