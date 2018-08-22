@@ -5,116 +5,198 @@
 # Add-on to facilitate toolbar management.
 # Partially inspired by ObjNav add-on, of Joseph Lee and others.
 
-import globalPluginHandler
-from globalCommands import commands, SCRCAT_OBJECTNAVIGATION
-from NVDAObjects.IAccessible import WindowRoot, getNVDAObjectFromEvent
 #from NVDAObjects.window import Window as getNVDAObjectFromHandle
-import winUser
+from NVDAObjects import NVDAObject
+from NVDAObjects.IAccessible import WindowRoot, getNVDAObjectFromEvent
+from globalCommands import commands, SCRCAT_OBJECTNAVIGATION
 from globalVars import desktopObject
-from msg import message as NVDALocale
-import api
-import speech
-import controlTypes as ct
-import ui
 from logHandler import log
+from msg import message as NVDALocale
+from scriptHandler import findScript, executeScript
 import addonHandler
+import api
+import controlTypes as ct
+import ctypes
+import globalPluginHandler
+import speech
+import time
+import ui
+import winUser
 
 addonHandler.initTranslation()
 
+# to enable logging
+DEBUG = False
+
+def debugLog(message):
+	if DEBUG:
+		log.info(message)
+
+# for testing performances
+from contextlib import contextmanager
+@contextmanager
+def timeblock(label):
+	start = time.clock()
+	try:
+		yield
+	finally:
+		end = time.clock()
+		debugLog("%s: %.3f s"%(label, end-start))
+
+# Modified version of windowUtils.findDescendantWindow.
+WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+def findAllDescendantWindows(parent, visible=None, className=None):
+	"""Find all descendant windows, optionally matching specified visibility or className."""
+	results = []
+	@WNDENUMPROC
+	def callback(window, data):
+		if (
+			(visible is None or winUser.isWindowVisible(window) == visible)
+			and (not className or className in winUser.getClassName(window))
+		):
+			results.append(window)
+		return True
+	# call previous func until it returns True,
+	# thus always, getting all windows
+	ctypes.windll.user32.EnumChildWindows(parent, callback, 0)
+	return results
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
-	# roles of objects that can contain a toolbar
-	promisingRoles = (ct.ROLE_WINDOW, ct.ROLE_PANE, ct.ROLE_DIALOG, ct.ROLE_FRAME, ct.ROLE_APPLICATION, ct.ROLE_BOX, ct.ROLE_GROUPING, ct.ROLE_PROPERTYPAGE, ct.ROLE_DIRECTORYPANE, ct.ROLE_GLASSPANE, ct.ROLE_INPUTWINDOW, ct.ROLE_PAGE, ct.ROLE_LAYEREDPANE, ct.ROLE_ROOTPANE, ct.ROLE_EDITBAR, ct.ROLE_TERMINAL, ct.ROLE_RICHEDIT, ct.ROLE_SCROLLPANE, ct.ROLE_SPLITPANE, ct.ROLE_VIEWPORT, ct.ROLE_TEXTFRAME, ct.ROLE_INTERNALFRAME, ct.ROLE_DESKTOPPANE, ct.ROLE_PANEL)
+	# roles of objects that could contain a toolbar
+	# splitted in two tuples for probability/performance reasons
+	promisingRoles = (ct.ROLE_APPLICATION, ct.ROLE_WINDOW, ct.ROLE_DIALOG, ct.ROLE_FRAME, ct.ROLE_PAGE, ct.ROLE_PROPERTYPAGE,)
+	lessPromisingRoles = (ct.ROLE_PANE, ct.ROLE_OPTIONPANE, ct.ROLE_BOX, ct.ROLE_GROUPING, ct.ROLE_DIRECTORYPANE, ct.ROLE_GLASSPANE, ct.ROLE_INPUTWINDOW, ct.ROLE_LAYEREDPANE, ct.ROLE_ROOTPANE, ct.ROLE_EDITBAR, ct.ROLE_TERMINAL, ct.ROLE_RICHEDIT, ct.ROLE_SCROLLPANE, ct.ROLE_SPLITPANE, ct.ROLE_VIEWPORT, ct.ROLE_TEXTFRAME, ct.ROLE_INTERNALFRAME, ct.ROLE_DESKTOPPANE, ct.ROLE_PANEL,)
+
+	def configVars(self):
+		"""collects and initializes starting variables."""
+		# the object used as root (may be not the real root)
+		self.root = None
+		# current application name
+		self.curAppName = None
+		# a dict with backup of objects on focus and navigator, prior exploration starting
+		self.startObjs = None
+		# toolbars found after search
+		self.bars = []
+		# index of current toolbar in exploration
+		self.barIndex = 0
+		# items of current toolbar
+		self.barItems = []
+		# index of selected item
+		self.barItemIndex = None
 
 	def findToolbars(self):
 		"""the core method to find and filter toolbar objects."""
-		# search root object
+		self.getRoot()
+		if not self.root:
+			debugLog("No root found")
+			return
+		debugLog("root is: %s"%self.root)
+		# launch search
+		self.searchLauncher()
+		# launch filters
+		self.fixToolbars()
+		debugLog("Found %d toolbars"%len(self.bars))
+
+	def getRoot(self):
+		"""selects or adjusts root object for search."""
 		for ancestor in api.getFocusAncestors():
 			if isinstance(ancestor, WindowRoot): # or ancestor.simpleParent == desktopObject:
-				root = ancestor
+				self.root = ancestor
 				break
-		if not root:
-			return
-		app = root.appModule.appName
-		if app and (app in ("chrome", "soffice") or root.windowClassName == u'MozillaWindowClass'):
-			# use slowSearch for tese apps, for now
-#			log.info("Use slow method directly")
-			self.slowSearch(root)
+		curFocus = api.getFocusObject()
+		self.curAppName = curFocus.appModule.appName if curFocus.appModule else None
+		debugLog("%s toolbars session"%self.curAppName)
+		# root adjustments
+		if self.curAppName in ("calibre",):
+			while curFocus.role != ct.ROLE_WINDOW:
+				curFocus = curFocus.simpleParent
+			self.root = curFocus.simpleParent
+		elif self.curAppName == "explorer" and curFocus.simpleParent.simpleParent == desktopObject:
+			debugLog("Desktop list detected, root adjustment")
+			# set root as desktopObject
+			self.root = curFocus.simpleParent.simpleParent
+			# adjust appName as specified in desktopObject above (see condition later)
+			self.curAppName = "csrss"
+
+	def searchLauncher(self):
+		"""chooses and launch appropriate search method."""
+		# for applications where children sometimes disappear going to parent
+		if self.curAppName in ("soffice",):
+			debugLog("Try bottom-up search")
+			curFocus = api.getFocusObject()
+			self.bottomUpRecursiveSearch(curFocus.simpleParent, ct.ROLE_TOOLBAR, [])
+		# for browsers and other apps where expressSearch regularly fails
+		elif self.curAppName in ("chrome", "calibre",) or self.root.windowClassName in ("MozillaWindowClass",):
+			# use slowSearch for these apps, for now
+			debugLog("Use slow method directly")
+			self.slowSearch()
 		else:
 			# best case, expressSearch works
-#			log.info("Try expressSearch")
-			self.expressSearch(root)
+			debugLog("Try expressSearch")
+			self.expressSearch()
 			# ...oterwise, try slow method
 			if not self.bars:
-#				log.info("Try slow method")
-				self.slowSearch(root)
-		self.fixToolbars()
-#		log.info("Found %d toolbars"%len(self.bars))
+				debugLog("Try slow method")
+				self.slowSearch()
 
-	def expressSearch(self, root):
+	def expressSearch(self):
 		"""search toolbars using windows handles."""
 		barHandles = findAllDescendantWindows(api.getForegroundObject().windowHandle, visible=True) #, className="Toolbar") 
-#		log.info("Found %d handles"%len(barHandles))
-		# for testing
-#		promisingObjCount = 0
+		debugLog("Found %d handles"%len(barHandles))
 		for handle in barHandles:
 			bar = getNVDAObjectFromEvent(handle, winUser.OBJID_CLIENT, 0)
 			if bar:
-				if bar.role == ct.ROLE_TOOLBAR: # and bar not in self.bars:
+				if bar.role == ct.ROLE_TOOLBAR:
 					self.bars.append(bar)
 				# some handles carry to invisible simpleParent
 				# i.e. in Windows explorer
-				elif not bar.isFocusable and bar.role in self.promisingRoles:
-#					promisingObjCount += 1
-					self.bars.extend(filter(lambda obj: obj.role == ct.ROLE_TOOLBAR, bar.children))
-#		log.info("Analyzed %d promising objects"%promisingObjCount)
+				elif not bar.isFocusable and (bar.role in self.promisingRoles or bar.role in self.lessPromisingRoles):
+					# indeed, here child may be a toolbar, and bar its parent
+					for child in bar.children:
+						if child.role == ct.ROLE_TOOLBAR:
+							self.bars.append(child)
 
-	def slowSearch(self, root):
+	def slowSearch(self):
 		"""search toolbars using object navigation."""
-		# for testing
-#		self.objCount = 0
-		self.recursiveSearch(root, ct.ROLE_TOOLBAR)
-#		log.info("objCount=%d"%self.objCount)
+		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR)
 		# search gives bars in reverse order, so...
 		self.bars.reverse()
 
-	def fixToolbars(self):
-		"""removes empty or unwanted, assign numbers to anonymous toolbars."""
-		fixedBars = []
-		for bar in self.bars:
-			child = bar.simpleFirstChild
-			# Mozilla apps have a toolbar with menubar as first child, purge out
-			if child and child.role != ct.ROLE_MENUBAR:
-				fixedBars.append(bar)
-				if not bar.name:
-					bar.name = ' '.join([NVDALocale("tool bar"), str(len(fixedBars))])
-		self.bars = fixedBars
-
 	def recursiveSearch(self, obj, matchRole):
 		"""performs a recursive search on object hierarchy."""
-		if obj.role in self.promisingRoles:
+		debugLog("Analyzing %s: %s"%(obj.name,obj))
+		if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
 			childObj = obj.simpleLastChild
 			if childObj:
 				self.recursiveSearch(childObj, matchRole)
-		elif obj.role == matchRole: # and obj not in self.bars:
+		elif obj.role == matchRole:
 			self.bars.append(obj)
 		prevObj = obj.simplePrevious
-		# LibreOffice use a non-relative dialog
-		if prevObj and (prevObj.simpleParent != desktopObject or prevObj.role == ct.ROLE_DIALOG):
-			self.recursiveSearch(prevObj, matchRole)
-		# for testing
-#		self.objCount += 1
+		if prevObj:
+			prevAppName = prevObj.appModule.appName if prevObj.appModule else None
+			if (
+				(prevObj.simpleParent != desktopObject)
+				or
+				# LibreOffice use a non-relative dialog in certain configurations
+				(prevObj.role == ct.ROLE_DIALOG and prevAppName == self.curAppName)
+				or
+				# try to manage starting from desktop list
+				(prevObj.simpleParent == self.root == desktopObject and (prevAppName, self.curAppName) == ("explorer", "csrss"))
+			):
+				debugLog("Go previous")
+				self.recursiveSearch(prevObj, matchRole)
 
 	def nonrecursiveSearch(self, obj, matchRole):
-		"""performs a nonrecursive search on object hierarchy."""
+		"""performs a nonrecursive search on object hierarchy.
+			WARNING: this method is outdated (some condition checks lack), see recursiveSearch instead."""
+		# objects to analyze in each loop iteration
 		objList = [obj]
 		# breadth first search loop
 		while objList:
 			newObjList = []
 			for obj in objList:
-				# for testing
-#				self.objCount += 1
-				if obj.role in self.promisingRoles:
+				if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
 					obj = obj.simpleLastChild
 					while obj and (obj.simpleParent != desktopObject or obj.role == ct.ROLE_DIALOG):
 						newObjList.append(obj)
@@ -123,9 +205,61 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					self.bars.append(obj)
 			objList = newObjList
 
+	def bottomUpRecursiveSearch(self, obj, matchRole, skipObjs, lastDirection=None):
+		"""performs a object search starting from passed object and climbing back to root.""" 
+		debugLog("Analyzing %s: %s"%(obj.name,obj))
+		if obj in skipObjs:
+			debugLog("obj already analyzed")
+			return
+		else:
+			# consider obj as already analyzed in later recursions
+			skipObjs.append(obj)
+		if (obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles) and lastDirection != "up":
+			# we use another search to analyzing down
+			# reversing bars before and after to have them ordered
+			self.bars.reverse()
+			debugLog("Launching recursive search")
+			self.recursiveSearch(obj, matchRole)
+			debugLog("recursiveSearch finished")
+			self.bars.reverse()
+		elif obj.role == ct.ROLE_TOOLBAR:
+			self.bars.append(obj)
+		nextObj = obj.simpleNext
+		nextAppName = nextObj.appModule.appName if (nextObj and nextObj.appModule) else None
+		if nextObj and nextAppName == self.curAppName:
+			debugLog("Go next")
+			self.bottomUpRecursiveSearch(nextObj, matchRole, skipObjs)
+		prevObj = obj.simplePrevious
+		prevAppName = prevObj.appModule.appName if (prevObj and prevObj.appModule) else None
+		if prevObj and prevAppName == self.curAppName:
+			debugLog("Go previous")
+			self.bottomUpRecursiveSearch(prevObj, matchRole, skipObjs)
+		parentObj = obj.simpleParent
+		if parentObj and parentObj != desktopObject:
+			debugLog("Go up")
+			self.bottomUpRecursiveSearch(parentObj, matchRole, skipObjs, "up")
+
+	def fixToolbars(self):
+		"""removes empty, duplicate or unwanted, assign numbers to anonymous toolbars."""
+		fixedBars = []
+		for bar in self.bars:
+			# remove duplicates
+			if bar in fixedBars:
+				# show warning: duplicate must be rare, not the usual
+				debugLog("WARNING: duplicate toolbar found, %s: %s"%(bar.name, bar))
+				continue
+			child = bar.simpleFirstChild
+			# Mozilla apps have a toolbar with menubar as first child, purge out
+			if child and child.role != ct.ROLE_MENUBAR:
+				fixedBars.append(bar)
+				# if bar has a child and is anonymous, rename it
+				if not bar.name:
+					bar.name = ' '.join([NVDALocale("tool bar"), str(len(fixedBars))])
+		self.bars = fixedBars
+
 	def script_startExploration(self, gesture):
-		self.bars = []
-		# for testing
+		self.configVars()
+		# for testing performances
 		with timeblock("Toolbars found in"):
 			self.findToolbars()
 		if not self.bars:
@@ -140,40 +274,59 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.bindGesture("kb:space", "objLeftClick")
 		self.bindGesture("kb:applications", "objRightClick")
 		# a initial object backup
-		self.startObj = api.getNavigatorObject()
-		self.barIndex = 0
-		# TODO: dinamically get barItems, without barItemIndex and barItems
-		self.barItemIndex = None
+		self.startObjs = {"focus": api.getFocusObject(), "nav": api.getNavigatorObject()}
 		bar = self.bars[self.barIndex]
-		# get toolbar items, excluding separators
-		self.barItems = filter(lambda obj: obj.role != ct.ROLE_SEPARATOR, bar.children)
+		self.populateBarItems(bar)
 		api.setNavigatorObject(bar)
 		speech.speakObject(bar, reason=ct.REASON_FOCUS)
 	# Translators: input help mode message for ToolbarsExplorer start command.
 	script_startExploration.__doc__ = _("Starts exploration of toolbars, if present in current application")
 	script_startExploration.category = SCRCAT_OBJECTNAVIGATION
 
-	def script_finish(self, gesture, restoreFocus=True):
+	def populateBarItems(self, bar):
+		"""populates self.barItems, excluding  unwanted objects."""
+		# TODO: dinamically get barItems, without barItemIndex and barItems
+		for child in bar.children:
+			if (
+				# exclude separators and unknown objects
+				(child.role in (ct.ROLE_SEPARATOR, ct.ROLE_UNKNOWN,))
+				or
+				# exclude empty panes and sub-toolbars
+				(child.role in (ct.ROLE_PANE, ct.ROLE_TOOLBAR,) and not child.simpleFirstChild)
+			):
+				continue
+			self.barItems.append(child)
+
+	def script_finish(self, gesture, restoreBackup=True):
 		self.clearGestureBindings()
 		self.bindGestures(self.__gestures)
-		# restore initial object
-		if restoreFocus:
-			api.setNavigatorObject(self.startObj)
-			speech.speakObject(self.startObj, reason=ct.REASON_FOCUS)
+		# restore initial objects
+		if restoreBackup:
+			api.setFocusObject(self.startObjs["focus"])
+			api.setNavigatorObject(self.startObjs["nav"])
+			speech.speakObject(self.startObjs["focus"], reason=ct.REASON_FOCUS)
 
 	def shouldTerminate(self):
-		"""Tries to establish whether we are still exploring toolbars (i.e., after an action)."""
-		curObj = api.getNavigatorObject()
-		if curObj not in self.bars and curObj not in self.barItems:
+		"""Tries to establish whether we are still exploring toolbars."""
+		curNav = api.getNavigatorObject()
+		curFocus = api.getFocusObject()
+		if (
+			# navigator is out of toolbars
+			(curNav not in self.bars and curNav not in self.barItems)
+			or
+			# focus is changed
+			(curFocus != self.startObjs["focus"])
+		):
 			return True
 
 	def getBar(self, increment):
 		"""provides toolbars circularly."""
 		self.barIndex = (self.barIndex+increment)%len(self.bars)
 		bar = self.bars[self.barIndex]
-		# reset items for new bar
+		# reset index and items for new bar
 		self.barItemIndex = None
-		self.barItems = filter(lambda obj: obj.role != ct.ROLE_SEPARATOR, bar.children)
+		self.barItems = []
+		self.populateBarItems(bar)
 		return bar
 
 	def getBarItem(self, increment):
@@ -189,9 +342,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return self.barItems[self.barItemIndex]
 
 	def script_explore(self, gesture):
+		# when you execute a non-mapped action and focus/navigator object changes
 		if self.shouldTerminate():
-			self.script_finish(gesture, restoreFocus=False)
-			# TODO: last gesture should be processed by other object
+			self.script_finish(gesture, restoreBackup=False)
+			script = findScript(gesture)
+			if not script:
+				gesture.send()
+			else:
+				executeScript(script, gesture)
 			return
 		arrow = gesture.mainKeyName
 		# left and right to change toolbar,
@@ -211,57 +369,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# invoke activate action on current toolbar item
 		commands.script_review_activate(gesture)
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreFocus=False)
+		self.script_finish(gesture, restoreBackup=False)
 
 	def script_objLeftClick(self, gesture):
 		# move mouse to current toolbar item
 		commands.script_moveMouseToNavigatorObject(gesture)
+		time.sleep(0.3)
 		# click it
 		commands.script_leftMouseClick(gesture)
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreFocus=False)
+		self.script_finish(gesture, restoreBackup=False)
 
 	def script_objRightClick(self, gesture):
 		# move mouse to current toolbar item
 		commands.script_moveMouseToNavigatorObject(gesture)
+		time.sleep(0.3)
 		# click it
 		commands.script_rightMouseClick(gesture)
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreFocus=False)
+		self.script_finish(gesture, restoreBackup=False)
 
 	__gestures = {
 	"kb:alt+applications": "startExploration"
 	}
-
-# for testing
-from contextlib import contextmanager
-import time
-
-@contextmanager
-def timeblock(label):
-	start = time.clock()
-	try:
-		yield
-	finally:
-		end = time.clock()
-		log.info("%s: %.3f s"%(label, end-start))
-
-import ctypes
-
-# Modified version of windowUtils.findDescendantWindow.
-WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
-def findAllDescendantWindows(parent, visible=None, className=None):
-	"""Find all descendant windows, optionally matching specified visibility or className."""
-	results = []
-	@WNDENUMPROC
-	def callback(window, data):
-		if (
-			(visible is None or winUser.isWindowVisible(window) == visible)
-			and (not className or className in winUser.getClassName(window))
-		):
-			results.append(window)
-		return True
-	# call previous func until it returns True,
-	# thus always, getting all windows
-	ctypes.windll.user32.EnumChildWindows(parent, callback, 0)
-	return results
