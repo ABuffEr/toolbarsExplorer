@@ -22,8 +22,10 @@ During exploration, following gestures are available:
 
 Additionally, you can perform actions on toolbars or its items using any gesture provided by NVDA, as exactly as when you move to objects with standard object navigation.
 
-## Note
+## Notes and suggestions
 
-Exploration terminates explicitly pressing escape, and implicitly performing an action on toolbar or its item.
+* Exploration terminates explicitly pressing escape, and implicitly performing an action on toolbar or its item;
+* In LibreOffice, best configuration is probably default or single toolbar, set it on view menu/toolbar position.
 
-[2]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/toolbarsExplorer-1.0-dev.nvda-addon
+
+[2]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/toolbarsExplorer-1.0-20180822-dev.nvda-addon
