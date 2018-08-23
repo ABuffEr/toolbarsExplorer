@@ -6,7 +6,6 @@
 # Partially inspired by ObjNav add-on, of Joseph Lee and others.
 
 #from NVDAObjects.window import Window as getNVDAObjectFromHandle
-from NVDAObjects import NVDAObject
 from NVDAObjects.IAccessible import WindowRoot, getNVDAObjectFromEvent
 from globalCommands import commands, SCRCAT_OBJECTNAVIGATION
 from globalVars import desktopObject
@@ -18,8 +17,8 @@ import api
 import controlTypes as ct
 import ctypes
 import globalPluginHandler
+import review
 import speech
-import time
 import ui
 import winUser
 
@@ -33,6 +32,7 @@ def debugLog(message):
 		log.info(message)
 
 # for testing performances
+import time
 from contextlib import contextmanager
 @contextmanager
 def timeblock(label):
@@ -74,8 +74,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.root = None
 		# current application name
 		self.curAppName = None
-		# a dict with backup of objects on focus and navigator, prior exploration starting
-		self.startObjs = None
+		# a backup of review mode, focus and navigator objects, prior exploration starting
+		self.startSnap = {}.fromkeys(["focus", "nav", "reviewMode"])
 		# toolbars found after search
 		self.bars = []
 		# index of current toolbar in exploration
@@ -125,7 +125,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if self.curAppName in ("soffice",):
 			debugLog("Try bottom-up search")
 			curFocus = api.getFocusObject()
-			self.bottomUpRecursiveSearch(curFocus.simpleParent, ct.ROLE_TOOLBAR, [])
+			self.bottomUpRecursiveSearch(curFocus, ct.ROLE_TOOLBAR)
 		# for browsers and other apps where expressSearch regularly fails
 		elif self.curAppName in ("chrome", "calibre",) or self.root.windowClassName in ("MozillaWindowClass",):
 			# use slowSearch for these apps, for now
@@ -159,19 +159,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def slowSearch(self):
 		"""search toolbars using object navigation."""
-		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR)
+		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR, outRoot=True)
 		# search gives bars in reverse order, so...
 		self.bars.reverse()
 
-	def recursiveSearch(self, obj, matchRole):
+	def recursiveSearch(self, obj, matchRole, outRoot=True):
 		"""performs a recursive search on object hierarchy."""
 		debugLog("Analyzing %s: %s"%(obj.name,obj))
 		if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
 			childObj = obj.simpleLastChild
 			if childObj:
+				debugLog("Go down")
 				self.recursiveSearch(childObj, matchRole)
 		elif obj.role == matchRole:
 			self.bars.append(obj)
+		# outRoot on False limits out-of-root search in first recursion
+		if not outRoot:
+			return
 		prevObj = obj.simplePrevious
 		if prevObj:
 			prevAppName = prevObj.appModule.appName if prevObj.appModule else None
@@ -205,39 +209,36 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 					self.bars.append(obj)
 			objList = newObjList
 
-	def bottomUpRecursiveSearch(self, obj, matchRole, skipObjs, lastDirection=None):
-		"""performs a object search starting from passed object and climbing back to root.""" 
+	def bottomUpRecursiveSearch(self, obj, matchRole, lastDirection="up"):
+		"""performs a object search starting from passed object, exploring current level and climbing back to root.""" 
 		debugLog("Analyzing %s: %s"%(obj.name,obj))
-		if obj in skipObjs:
-			debugLog("obj already analyzed")
-			return
-		else:
-			# consider obj as already analyzed in later recursions
-			skipObjs.append(obj)
-		if (obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles) and lastDirection != "up":
+		if lastDirection != "up" and (obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles):
 			# we use another search to analyzing down
 			# reversing bars before and after to have them ordered
 			self.bars.reverse()
 			debugLog("Launching recursive search")
-			self.recursiveSearch(obj, matchRole)
+			self.recursiveSearch(obj, matchRole, outRoot=False)
 			debugLog("recursiveSearch finished")
 			self.bars.reverse()
 		elif obj.role == ct.ROLE_TOOLBAR:
 			self.bars.append(obj)
-		nextObj = obj.simpleNext
-		nextAppName = nextObj.appModule.appName if (nextObj and nextObj.appModule) else None
-		if nextObj and nextAppName == self.curAppName:
-			debugLog("Go next")
-			self.bottomUpRecursiveSearch(nextObj, matchRole, skipObjs)
-		prevObj = obj.simplePrevious
-		prevAppName = prevObj.appModule.appName if (prevObj and prevObj.appModule) else None
-		if prevObj and prevAppName == self.curAppName:
-			debugLog("Go previous")
-			self.bottomUpRecursiveSearch(prevObj, matchRole, skipObjs)
-		parentObj = obj.simpleParent
-		if parentObj and parentObj != desktopObject:
-			debugLog("Go up")
-			self.bottomUpRecursiveSearch(parentObj, matchRole, skipObjs, "up")
+		if lastDirection in ("next", "up"):
+			nextObj = obj.simpleNext
+			nextAppName = nextObj.appModule.appName if (nextObj and nextObj.appModule) else None
+			if nextObj and nextAppName == self.curAppName:
+				debugLog("Go next")
+				self.bottomUpRecursiveSearch(nextObj, matchRole, "next")
+		if lastDirection in ("prev", "up"):
+			prevObj = obj.simplePrevious
+			prevAppName = prevObj.appModule.appName if (prevObj and prevObj.appModule) else None
+			if prevObj and prevAppName == self.curAppName:
+				debugLog("Go previous")
+				self.bottomUpRecursiveSearch(prevObj, matchRole, "prev")
+		if lastDirection == "up":
+			parentObj = obj.simpleParent
+			if parentObj and parentObj != desktopObject:
+				debugLog("Go up")
+				self.bottomUpRecursiveSearch(parentObj, matchRole, "up")
 
 	def fixToolbars(self):
 		"""removes empty, duplicate or unwanted, assign numbers to anonymous toolbars."""
@@ -259,6 +260,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def script_startExploration(self, gesture):
 		self.configVars()
+		# a initial objects backup
+		self.startSnap["focus"] = api.getFocusObject()
+		self.startSnap["nav"] = api.getNavigatorObject()
+		self.startSnap["reviewMode"] = review.getCurrentMode()
+		# set object navigation active
+		review.setCurrentMode("object", updateReviewPosition=False)
 		# for testing performances
 		with timeblock("Toolbars found in"):
 			self.findToolbars()
@@ -273,8 +280,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.bindGesture("kb:enter", "objActivate")
 		self.bindGesture("kb:space", "objLeftClick")
 		self.bindGesture("kb:applications", "objRightClick")
-		# a initial object backup
-		self.startObjs = {"focus": api.getFocusObject(), "nav": api.getNavigatorObject()}
 		bar = self.bars[self.barIndex]
 		self.populateBarItems(bar)
 		api.setNavigatorObject(bar)
@@ -292,19 +297,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				(child.role in (ct.ROLE_SEPARATOR, ct.ROLE_UNKNOWN,))
 				or
 				# exclude empty panes and sub-toolbars
-				(child.role in (ct.ROLE_PANE, ct.ROLE_TOOLBAR,) and not child.simpleFirstChild)
+				# but not in Eclipse, where sub-toolbars are buttons
+				(self.curAppName != "eclipse" and child.role in (ct.ROLE_PANE, ct.ROLE_TOOLBAR,) and not child.simpleFirstChild)
 			):
 				continue
 			self.barItems.append(child)
 
-	def script_finish(self, gesture, restoreBackup=True):
+	def script_finish(self, gesture, restoreMode=True, restoreObjects=True):
 		self.clearGestureBindings()
 		self.bindGestures(self.__gestures)
-		# restore initial objects
-		if restoreBackup:
-			api.setFocusObject(self.startObjs["focus"])
-			api.setNavigatorObject(self.startObjs["nav"])
-			speech.speakObject(self.startObjs["focus"], reason=ct.REASON_FOCUS)
+		# restore initial objects and review mode
+		if restoreMode:
+			review.setCurrentMode(self.startSnap["reviewMode"], updateReviewPosition=False)
+		if restoreObjects:
+			api.setFocusObject(self.startSnap["focus"])
+			api.setNavigatorObject(self.startSnap["nav"])
+			speech.speakObject(self.startSnap["focus"], reason=ct.REASON_FOCUS)
 
 	def shouldTerminate(self):
 		"""Tries to establish whether we are still exploring toolbars."""
@@ -315,7 +323,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			(curNav not in self.bars and curNav not in self.barItems)
 			or
 			# focus is changed
-			(curFocus != self.startObjs["focus"])
+			(curFocus != self.startSnap["focus"])
 		):
 			return True
 
@@ -331,6 +339,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def getBarItem(self, increment):
 		"""provides toolbar items circularly."""
+		# after filters, there may be no items
+		if not self.barItems:
+			return
 		# checks to avoid initial undesired skip
 		# scrolling toolbar items
 		if self.barItemIndex is None and increment > 0:
@@ -344,11 +355,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_explore(self, gesture):
 		# when you execute a non-mapped action and focus/navigator object changes
 		if self.shouldTerminate():
-			self.script_finish(gesture, restoreBackup=False)
+			debugLog("Out-of-exploration gesture: %s"%gesture.mainKeyName)
+			self.script_finish(gesture, restoreObjects=False)
 			script = findScript(gesture)
 			if not script:
 				gesture.send()
 			else:
+				debugLog("Execute script %s"%script)
 				executeScript(script, gesture)
 			return
 		arrow = gesture.mainKeyName
@@ -362,32 +375,36 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			newObj = self.getBarItem(-1)
 		elif arrow == "downArrow":
 			newObj = self.getBarItem(+1)
+		if not newObj:
+			# Translators: message presented when filtered toolbar has no elements
+			ui.message(_("No toolbar item"))
+			return
 		api.setNavigatorObject(newObj)
 		speech.speakObject(newObj, reason=ct.REASON_FOCUS)
 
 	def script_objActivate(self, gesture):
+		# we have finished, regardless action result
+		self.script_finish(gesture, restoreObjects=False)
 		# invoke activate action on current toolbar item
 		commands.script_review_activate(gesture)
-		# we have finished, regardless action result
-		self.script_finish(gesture, restoreBackup=False)
 
 	def script_objLeftClick(self, gesture):
 		# move mouse to current toolbar item
 		commands.script_moveMouseToNavigatorObject(gesture)
-		time.sleep(0.3)
-		# click it
-		commands.script_leftMouseClick(gesture)
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreBackup=False)
+		self.script_finish(gesture, restoreObjects=False)
+		# click!
+		winUser.mouse_event(winUser.MOUSEEVENTF_LEFTDOWN,0,0,None,None)
+		winUser.mouse_event(winUser.MOUSEEVENTF_LEFTUP,0,0,None,None)
 
 	def script_objRightClick(self, gesture):
 		# move mouse to current toolbar item
 		commands.script_moveMouseToNavigatorObject(gesture)
-		time.sleep(0.3)
-		# click it
-		commands.script_rightMouseClick(gesture)
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreBackup=False)
+		self.script_finish(gesture, restoreObjects=False)
+		# click!
+		winUser.mouse_event(winUser.MOUSEEVENTF_RIGHTDOWN,0,0,None,None)
+		winUser.mouse_event(winUser.MOUSEEVENTF_RIGHTUP,0,0,None,None)
 
 	__gestures = {
 	"kb:alt+applications": "startExploration"

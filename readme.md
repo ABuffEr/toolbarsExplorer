@@ -28,4 +28,4 @@ Additionally, you can perform actions on toolbars or its items using any gesture
 * In LibreOffice, best configuration is probably default or single toolbar, set it on view menu/toolbar position.
 
 
-[2]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/toolbarsExplorer-1.0-20180822-dev.nvda-addon
+[2]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/toolbarsExplorer-1.0-20180823-dev.nvda-addon
