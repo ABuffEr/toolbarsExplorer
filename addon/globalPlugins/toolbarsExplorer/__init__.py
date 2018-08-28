@@ -377,7 +377,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			newObj = self.getBarItem(+1)
 		if not newObj:
 			# Translators: message presented when filtered toolbar has no elements
-			ui.message(_("No toolbar item"))
+			ui.reviewMessage(_("No toolbar item"))
 			return
 		api.setNavigatorObject(newObj)
 		speech.speakObject(newObj, reason=ct.REASON_FOCUS)
