@@ -95,7 +95,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# launch search
 		self.searchLauncher()
 		# launch filters
-		self.fixToolbars()
+		self.filterToolbars()
 		debugLog("Found %d toolbars"%len(self.bars))
 
 	def getRoot(self):
@@ -240,7 +240,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				debugLog("Go up")
 				self.bottomUpRecursiveSearch(parentObj, matchRole, "up")
 
-	def fixToolbars(self):
+	def filterToolbars(self):
 		"""removes empty, duplicate or unwanted, assign numbers to anonymous toolbars."""
 		fixedBars = []
 		for bar in self.bars:
@@ -253,8 +253,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Mozilla apps have a toolbar with menubar as first child, purge out
 			if child and child.role != ct.ROLE_MENUBAR:
 				fixedBars.append(bar)
-				# if bar has a child and is anonymous, rename it
-				if not bar.name:
+				# if bar has no or useless name, rename it
+				if not bar.name or bar.name.lower() in ("toolbar", "tool bar", NVDALocale("tool bar"),):
 					bar.name = ' '.join([NVDALocale("tool bar"), str(len(fixedBars))])
 		self.bars = fixedBars
 
@@ -291,7 +291,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def populateBarItems(self, bar):
 		"""populates self.barItems, excluding  unwanted objects."""
 		# TODO: dinamically get barItems, without barItemIndex and barItems
-		for child in bar.children:
+		children = []
+		child = bar.simpleFirstChild
+		while child:
+			children.append(child)
+			child = child.simpleNext
+			# for precaution
+			if child and child.simpleParent != bar:
+				child = None
+		for child in children:
 			if (
 				# exclude separators and unknown objects
 				(child.role in (ct.ROLE_SEPARATOR, ct.ROLE_UNKNOWN,))
