@@ -291,16 +291,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def populateBarItems(self, bar):
 		"""populates self.barItems, excluding  unwanted objects."""
 		# TODO: dinamically get barItems, without barItemIndex and barItems
-		children = []
-		child = bar.simpleFirstChild
-		while child:
-			children.append(child)
-			child = child.simpleNext
-			# for precaution
-			if child and child.simpleParent != bar:
-				child = None
-		for child in children:
+		for child in bar.children:
 			if (
+				# exclude invisible objects
+				(ct.STATE_INVISIBLE in child.states)
+				or
 				# exclude separators and unknown objects
 				(child.role in (ct.ROLE_SEPARATOR, ct.ROLE_UNKNOWN,))
 				or
