@@ -11,7 +11,6 @@ from globalCommands import commands, SCRCAT_OBJECTNAVIGATION
 from globalVars import desktopObject
 from logHandler import log
 from msg import message as NVDALocale
-from scriptHandler import findScript, executeScript
 import addonHandler
 import api
 import controlTypes as ct
@@ -63,10 +62,12 @@ def findAllDescendantWindows(parent, visible=None, className=None):
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
+	scriptCategory = SCRCAT_OBJECTNAVIGATION
 	# roles of objects that could contain a toolbar
 	# splitted in two tuples for probability/performance reasons
 	promisingRoles = (ct.ROLE_APPLICATION, ct.ROLE_WINDOW, ct.ROLE_DIALOG, ct.ROLE_FRAME, ct.ROLE_PAGE, ct.ROLE_PROPERTYPAGE,)
 	lessPromisingRoles = (ct.ROLE_PANE, ct.ROLE_OPTIONPANE, ct.ROLE_BOX, ct.ROLE_GROUPING, ct.ROLE_DIRECTORYPANE, ct.ROLE_GLASSPANE, ct.ROLE_INPUTWINDOW, ct.ROLE_LAYEREDPANE, ct.ROLE_ROOTPANE, ct.ROLE_EDITBAR, ct.ROLE_TERMINAL, ct.ROLE_RICHEDIT, ct.ROLE_SCROLLPANE, ct.ROLE_SPLITPANE, ct.ROLE_VIEWPORT, ct.ROLE_TEXTFRAME, ct.ROLE_INTERNALFRAME, ct.ROLE_DESKTOPPANE, ct.ROLE_PANEL,)
+	exploring = False
 
 	def configVars(self):
 		"""collects and initializes starting variables."""
@@ -101,7 +102,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def getRoot(self):
 		"""selects or adjusts root object for search."""
 		for ancestor in api.getFocusAncestors():
-			if isinstance(ancestor, WindowRoot): # or ancestor.simpleParent == desktopObject:
+			if isinstance(ancestor, WindowRoot):
 				self.root = ancestor
 				break
 		curFocus = api.getFocusObject()
@@ -142,20 +143,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def expressSearch(self):
 		"""search toolbars using windows handles."""
-		barHandles = findAllDescendantWindows(api.getForegroundObject().windowHandle, visible=True) #, className="Toolbar") 
+		barHandles = findAllDescendantWindows(api.getForegroundObject().windowHandle, visible=True)
 		debugLog("Found %d handles"%len(barHandles))
 		for handle in barHandles:
 			bar = getNVDAObjectFromEvent(handle, winUser.OBJID_CLIENT, 0)
-			if bar:
-				if bar.role == ct.ROLE_TOOLBAR:
-					self.bars.append(bar)
-				# some handles carry to invisible simpleParent
-				# i.e. in Windows explorer
-				elif not bar.isFocusable and (bar.role in self.promisingRoles or bar.role in self.lessPromisingRoles):
-					# indeed, here child may be a toolbar, and bar its parent
-					for child in bar.children:
-						if child.role == ct.ROLE_TOOLBAR:
-							self.bars.append(child)
+			if not bar:
+				continue
+			if bar.role == ct.ROLE_TOOLBAR:
+				self.bars.append(bar)
+			# some handles carry to invisible simpleParent
+			# i.e. in Windows explorer
+			elif not bar.isFocusable and (bar.role in self.promisingRoles or bar.role in self.lessPromisingRoles):
+				# indeed, here child may be a toolbar, and bar its parent
+				for child in bar.children:
+					if child.role == ct.ROLE_TOOLBAR:
+						self.bars.append(child)
 
 	def slowSearch(self):
 		"""search toolbars using object navigation."""
@@ -251,6 +253,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				continue
 			child = bar.simpleFirstChild
 			# Mozilla apps have a toolbar with menubar as first child, purge out
+			# TODO: exclude Office ribbon menubar
 			if child and child.role != ct.ROLE_MENUBAR:
 				fixedBars.append(bar)
 				# if bar has no or useless name, rename it
@@ -271,6 +274,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Translators: message in applications without toolbars
 			ui.message(_("No toolbar found"))
 			return
+		self.exploring = True
 		# set object navigation active
 		review.setCurrentMode("object", updateReviewPosition=False)
 		# see script_explore for gesture explanation
@@ -287,7 +291,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		speech.speakObject(bar, reason=ct.REASON_FOCUS)
 	# Translators: input help mode message for ToolbarsExplorer start command.
 	script_startExploration.__doc__ = _("Starts exploration of toolbars, if present in current application")
-	script_startExploration.category = SCRCAT_OBJECTNAVIGATION
 
 	def populateBarItems(self, bar):
 		"""populates self.barItems, excluding  unwanted objects."""
@@ -307,7 +310,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				continue
 			self.barItems.append(child)
 
-	def script_finish(self, gesture, restoreMode=True, restoreObjects=True):
+	def script_finish(self, gesture):
+		self.finish(toggle=True, restoreMode=True, restoreObjects=True)
+#	script_finish.__doc__ = _("terminates toolbars exploration")
+
+	def finish(self, toggle=False, restoreMode=False, restoreObjects=False):
+		if not toggle:
+			return
+		self.exploring = False
 		self.clearGestureBindings()
 		self.bindGestures(self.__gestures)
 		# restore initial objects and review mode
@@ -318,7 +328,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			api.setNavigatorObject(self.startSnap["nav"])
 			speech.speakObject(self.startSnap["focus"], reason=ct.REASON_FOCUS)
 
-	def shouldTerminate(self):
+	# not used at the moment
+	def terminateIfNecessary(self):
 		"""Tries to establish whether we are still exploring toolbars."""
 		curNav = api.getNavigatorObject()
 		curFocus = api.getFocusObject()
@@ -329,7 +340,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# focus is changed
 			(curFocus != self.startSnap["focus"])
 		):
-			return True
+			self.finish(toggle=True, restoreMode=True)
 
 	def getBar(self, increment):
 		"""provides toolbars circularly."""
@@ -344,6 +355,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def getBarItem(self, increment):
 		"""provides toolbar items circularly."""
 		# after filters, there may be no items
+		# TODO: avoid this situation
 		if not self.barItems:
 			return
 		# checks to avoid initial undesired skip
@@ -357,17 +369,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return self.barItems[self.barItemIndex]
 
 	def script_explore(self, gesture):
-		# when you execute a non-mapped action and focus/navigator object changes
-		if self.shouldTerminate():
-			debugLog("Out-of-exploration gesture: %s"%gesture.mainKeyName)
-			self.script_finish(gesture, restoreObjects=False)
-			script = findScript(gesture)
-			if not script:
-				gesture.send()
-			else:
-				debugLog("Execute script %s"%script)
-				executeScript(script, gesture)
-			return
 		arrow = gesture.mainKeyName
 		# left and right to change toolbar,
 		# down and up to scroll its items
@@ -385,31 +386,52 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		api.setNavigatorObject(newObj)
 		speech.speakObject(newObj, reason=ct.REASON_FOCUS)
+#	script_explore.__doc__ = _("moves between toolbars and their items")
 
 	def script_objActivate(self, gesture):
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreObjects=False)
+		self.finish(toggle=True, restoreMode=True)
 		# invoke activate action on current toolbar item
 		commands.script_review_activate(gesture)
+#	script_objActivate.__doc__ = _("performs default action on selected toolbar or its item")
 
 	def script_objLeftClick(self, gesture):
 		# move mouse to current toolbar item
 		commands.script_moveMouseToNavigatorObject(gesture)
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreObjects=False)
+		self.finish(toggle=True, restoreMode=True)
 		# click!
 		winUser.mouse_event(winUser.MOUSEEVENTF_LEFTDOWN,0,0,None,None)
 		winUser.mouse_event(winUser.MOUSEEVENTF_LEFTUP,0,0,None,None)
+#	script_objLeftClick.__doc__ = _("performs mouse left click on selected toolbar or its item")
 
 	def script_objRightClick(self, gesture):
 		# move mouse to current toolbar item
 		commands.script_moveMouseToNavigatorObject(gesture)
 		# we have finished, regardless action result
-		self.script_finish(gesture, restoreObjects=False)
+		self.finish(toggle=True, restoreMode=True)
 		# click!
 		winUser.mouse_event(winUser.MOUSEEVENTF_RIGHTDOWN,0,0,None,None)
 		winUser.mouse_event(winUser.MOUSEEVENTF_RIGHTUP,0,0,None,None)
+#	script_objRightClick.__doc__ = _("performs mouse right click on selected toolbar or its item")
 
 	__gestures = {
-	"kb:alt+applications": "startExploration"
+	"kb:alt+applications": "startExploration",
 	}
+
+	def getScript(self, gesture):
+		if not self.exploring:
+			# return scripts mapped in __gestures
+			return globalPluginHandler.GlobalPlugin.getScript(self, gesture)
+		# find script defined here as active during exploration
+		script = globalPluginHandler.GlobalPlugin.getScript(self, gesture)
+		if not script:
+			# then script may exist, but it's *not* defined here
+			if not gesture.isCharacter:
+				# allow execution and terminate
+				# TODO: terminate only if focus/nav change
+				self.finish(toggle=True, restoreMode=True)
+				return
+			# otherwise, suppress execution returning a fake function
+			script = lambda f: None
+		return script
