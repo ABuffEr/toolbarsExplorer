@@ -264,8 +264,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.startSnap["focus"] = api.getFocusObject()
 		self.startSnap["nav"] = api.getNavigatorObject()
 		self.startSnap["reviewMode"] = review.getCurrentMode()
-		# set object navigation active
-		review.setCurrentMode("object", updateReviewPosition=False)
 		# for testing performances
 		with timeblock("Toolbars found in"):
 			self.findToolbars()
@@ -273,6 +271,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Translators: message in applications without toolbars
 			ui.message(_("No toolbar found"))
 			return
+		# set object navigation active
+		review.setCurrentMode("object", updateReviewPosition=False)
 		# see script_explore for gesture explanation
 		for direction in ("up", "right", "down", "left"):
 			self.bindGesture("kb:%sArrow"%direction, "explore")
@@ -280,6 +280,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.bindGesture("kb:enter", "objActivate")
 		self.bindGesture("kb:space", "objLeftClick")
 		self.bindGesture("kb:applications", "objRightClick")
+		self.bindGesture("kb:shift+f10", "objRightClick")
 		bar = self.bars[self.barIndex]
 		self.populateBarItems(bar)
 		api.setNavigatorObject(bar)
