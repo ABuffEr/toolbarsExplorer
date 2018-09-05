@@ -16,14 +16,15 @@ During exploration, following gestures are available:
 * Up/down arrow: scrolls up/down items in current toolbar;
 * Enter: activates toolbar or its item;
 * Space: simulates left mouse click on toolbar or its item;
-* Applications: simulates right mouse click on toolbar or its item;
+* Applications/shift+F10: simulates right mouse click on toolbar or its item;
 * Escape: exits from exploration.
 
 Additionally, you can perform actions on toolbars or its items using any gesture provided by NVDA, as exactly as when you move to objects with standard object navigation.
 
 ## Notes and suggestions
 
-* Exploration terminates explicitly pressing escape, and implicitly performing an action on toolbar or its item;
+* Exploration terminates implicitly performing an action on toolbar or its item, or pressing a non-mapped gesture (exceptions below), and explicitly pressing escape;
+* Character gestures ("h", "1" etc) are ignored and don't disable the exploration;
 * In LibreOffice, best configuration is probably default or single toolbar, set it on view menu/toolbar position.
 
 
