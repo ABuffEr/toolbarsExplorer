@@ -44,14 +44,15 @@ def timeblock(label):
 
 # Modified version of windowUtils.findDescendantWindow.
 WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
-def findAllDescendantWindows(parent, visible=None, className=None):
+def findAllDescendantWindows(parent, visible=None, controlID=None, className=None):
 	"""Find all descendant windows, optionally matching specified visibility or className."""
 	results = []
 	@WNDENUMPROC
 	def callback(window, data):
 		if (
 			(visible is None or winUser.isWindowVisible(window) == visible)
-			and (not className or className in winUser.getClassName(window))
+			and (not controlID or winUser.getControlID(window) == controlID)
+			and (not className or winUser.getClassName(window) == className)
 		):
 			results.append(window)
 		return True
@@ -60,6 +61,19 @@ def findAllDescendantWindows(parent, visible=None, className=None):
 	ctypes.windll.user32.EnumChildWindows(parent, callback, 0)
 	return results
 
+# to avoid code copying to exclude ui.messages
+def runWithoutUiMessage(func, *args, **kwargs):
+	import speech
+	import config
+	configBackup = {"voice": speech.speechMode, "braille": config.conf["braille"]["messageTimeout"]}
+	speech.speechMode = speech.speechMode_off
+	config.conf["braille"]["messageTimeout"] = 0
+	try:
+		func(*args, **kwargs)
+	finally:
+		speech.speechMode = configBackup["voice"]
+		config.conf["braille"]["messageTimeout"] = configBackup["braille"]
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	scriptCategory = SCRCAT_OBJECTNAVIGATION
@@ -67,6 +81,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	# splitted in two tuples for probability/performance reasons
 	promisingRoles = (ct.ROLE_APPLICATION, ct.ROLE_WINDOW, ct.ROLE_DIALOG, ct.ROLE_FRAME, ct.ROLE_PAGE, ct.ROLE_PROPERTYPAGE,)
 	lessPromisingRoles = (ct.ROLE_PANE, ct.ROLE_OPTIONPANE, ct.ROLE_BOX, ct.ROLE_GROUPING, ct.ROLE_DIRECTORYPANE, ct.ROLE_GLASSPANE, ct.ROLE_INPUTWINDOW, ct.ROLE_LAYEREDPANE, ct.ROLE_ROOTPANE, ct.ROLE_EDITBAR, ct.ROLE_TERMINAL, ct.ROLE_RICHEDIT, ct.ROLE_SCROLLPANE, ct.ROLE_SPLITPANE, ct.ROLE_VIEWPORT, ct.ROLE_TEXTFRAME, ct.ROLE_INTERNALFRAME, ct.ROLE_DESKTOPPANE, ct.ROLE_PANEL,)
+	# toggle about exploration status
 	exploring = False
 
 	def configVars(self):
@@ -76,7 +91,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# current application name
 		self.curAppName = None
 		# a backup of review mode, focus and navigator objects, prior exploration starting
-		self.startSnap = {}.fromkeys(["focus", "nav", "reviewMode"])
+		self.startSnap = {}.fromkeys(("focus", "nav", "reviewMode"))
 		# toolbars found after search
 		self.bars = []
 		# index of current toolbar in exploration
@@ -87,7 +102,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.barItemIndex = None
 
 	def findToolbars(self):
-		"""the core method to find and filter toolbar objects."""
+		"""the starting method to find toolbar objects."""
 		self.getRoot()
 		if not self.root:
 			debugLog("No root found")
@@ -95,8 +110,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		debugLog("root is: %s"%self.root)
 		# launch search
 		self.searchLauncher()
-		# launch filters
-		self.filterToolbars()
 		debugLog("Found %d toolbars"%len(self.bars))
 
 	def getRoot(self):
@@ -113,6 +126,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			while curFocus.role != ct.ROLE_WINDOW:
 				curFocus = curFocus.simpleParent
 			self.root = curFocus.simpleParent
+		elif self.curAppName in ("thunderbird",):
+			# to get only toolbars for actual context
+			self.root = api.getForegroundObject()
 		elif self.curAppName == "explorer" and curFocus.simpleParent.simpleParent == desktopObject:
 			debugLog("Desktop list detected, root adjustment")
 			# set root as desktopObject
@@ -161,12 +177,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def slowSearch(self):
 		"""search toolbars using object navigation."""
-		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR, outRoot=True)
+		if self.curAppName in ("thunderbird",):
+			outRoot = False
+		else:
+			outRoot = True
+		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR, outRoot=outRoot)
 		# search gives bars in reverse order, so...
 		self.bars.reverse()
 
 	def recursiveSearch(self, obj, matchRole, outRoot=True):
-		"""performs a recursive search on object hierarchy."""
+		"""performs a filtered depth-first, right-to-left, recursive search on object hierarchy."""
 		debugLog("Analyzing %s: %s"%(obj.name,obj))
 		if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
 			childObj = obj.simpleLastChild
@@ -194,11 +214,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				self.recursiveSearch(prevObj, matchRole)
 
 	def nonrecursiveSearch(self, obj, matchRole):
-		"""performs a nonrecursive search on object hierarchy.
+		"""performs a filtered breadth-first, nonrecursive search on object hierarchy.
 			WARNING: this method is outdated (some condition checks lack), see recursiveSearch instead."""
 		# objects to analyze in each loop iteration
 		objList = [obj]
-		# breadth first search loop
+		# breadth-first search loop
 		while objList:
 			newObjList = []
 			for obj in objList:
@@ -242,38 +262,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				debugLog("Go up")
 				self.bottomUpRecursiveSearch(parentObj, matchRole, "up")
 
-	def filterToolbars(self):
-		"""removes empty, duplicate or unwanted, assign numbers to anonymous toolbars."""
-		fixedBars = []
-		for bar in self.bars:
-			# remove duplicates
-			if bar in fixedBars:
-				# show warning: duplicate must be rare, not the usual
-				debugLog("WARNING: duplicate toolbar found, %s: %s"%(bar.name, bar))
-				continue
-			child = bar.simpleFirstChild
-			# Mozilla apps have a toolbar with menubar as first child, purge out
-			# TODO: exclude Office ribbon menubar
-			if child and child.role != ct.ROLE_MENUBAR:
-				fixedBars.append(bar)
-				# if bar has no or useless name, rename it
-				if not bar.name or bar.name.lower() in ("toolbar", "tool bar", NVDALocale("tool bar"),):
-					bar.name = ' '.join([NVDALocale("tool bar"), str(len(fixedBars))])
-		self.bars = fixedBars
-
 	def script_startExploration(self, gesture):
 		self.configVars()
+		with timeblock("Toolbars found in"):
+			self.findToolbars()
+		self.initialFilterBars()
+		if self.bars:
+			self.populateBar(self.bars[self.barIndex])
+		if not self.bars:
+			# Translators: message in applications without toolbars
+			ui.message(_("No toolbar found"))
+			return
 		# a initial objects backup
 		self.startSnap["focus"] = api.getFocusObject()
 		self.startSnap["nav"] = api.getNavigatorObject()
 		self.startSnap["reviewMode"] = review.getCurrentMode()
 		# for testing performances
-		with timeblock("Toolbars found in"):
-			self.findToolbars()
-		if not self.bars:
-			# Translators: message in applications without toolbars
-			ui.message(_("No toolbar found"))
-			return
 		self.exploring = True
 		# set object navigation active
 		review.setCurrentMode("object", updateReviewPosition=False)
@@ -286,29 +290,97 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.bindGesture("kb:applications", "objRightClick")
 		self.bindGesture("kb:shift+f10", "objRightClick")
 		bar = self.bars[self.barIndex]
-		self.populateBarItems(bar)
 		api.setNavigatorObject(bar)
 		speech.speakObject(bar, reason=ct.REASON_FOCUS)
 	# Translators: input help mode message for ToolbarsExplorer start command.
 	script_startExploration.__doc__ = _("Starts exploration of toolbars, if present in current application")
 
-	def populateBarItems(self, bar):
-		"""populates self.barItems, excluding  unwanted objects."""
-		# TODO: dinamically get barItems, without barItemIndex and barItems
-		for child in bar.children:
+	def initialFilterBars(self):
+		"""removes empty, duplicate or surely unwanted toolbars."""
+		fixedBars = []
+		for bar in self.bars:
+			# remove duplicates
+			if bar in fixedBars:
+				# show warning: duplicate must be rare, not the usual
+				debugLog("WARNING: duplicate toolbar found, %s: %s"%(bar.name, bar))
+				continue
+			child = bar.simpleFirstChild
 			if (
-				# exclude invisible objects
-				(ct.STATE_INVISIBLE in child.states)
+				(not child)
+				or
+				# Mozilla apps have a toolbar with menubar as first child, purge out
+				(child.role == ct.ROLE_MENUBAR)
+				or
+				# remove Office ribbon menubar
+				(len(bar.children) == 1 and child.name == "Ribbon" and child.role == ct.ROLE_PROPERTYPAGE)
+			):
+				continue
+			fixedBars.append(bar)
+		debugLog("%d toolbars after initial filter"%len(fixedBars))
+		self.bars = fixedBars
+
+	def populateBar(self, bar):
+		"""add toolbar children to self.barItems, excluding  unwanted objects."""
+		# TODO: dinamically get barItems, without barItemIndex and barItems
+		debugLog("Populate bar %s"%bar.name)
+		children = bar.children
+		if len(children) == 1:
+			child = bar.simpleFirstChild
+			# useful for Office status toolbar
+			if child.role == ct.ROLE_PROPERTYPAGE:
+				debugLog("Integrate propertypage items")
+				children = child.children
+		for child in children:
+			if (
+				# exclude invisible and not focusable objects
+				(ct.STATE_INVISIBLE in child.states and not child.isFocusable)
 				or
 				# exclude separators and unknown objects
 				(child.role in (ct.ROLE_SEPARATOR, ct.ROLE_UNKNOWN,))
+				or
+				# exclude tab control in Mozilla apps
+				(child.role == ct.ROLE_TABCONTROL and child.windowClassName == "MozillaWindowClass")
 				or
 				# exclude empty panes and sub-toolbars
 				# but not in Eclipse, where sub-toolbars are buttons
 				(self.curAppName != "eclipse" and child.role in (ct.ROLE_PANE, ct.ROLE_TOOLBAR,) and not child.simpleFirstChild)
 			):
+				debugLog("Exclude bar item name: %s; role: %d; obj: %s"%(child.name, child.role, child))
 				continue
 			self.barItems.append(child)
+		if not self.barItems:
+			debugLog("Remove bar %s at index %d"%(bar.name, self.barIndex))
+			self.bars.remove(bar)
+			if not self.barIndex:
+				self.getBar(0)
+			else:
+				self.getBar(-1)
+			return
+		# if bar has no or useless name, rename it
+		if not bar.name or bar.name.lower() in ("toolbar", "tool bar", NVDALocale("tool bar"),):
+			bar.name = ' '.join([NVDALocale("tool bar"), str(self.barIndex+1)])
+
+	def getBar(self, increment):
+		"""provides toolbars circularly."""
+		self.barIndex = (self.barIndex+increment)%len(self.bars)
+		bar = self.bars[self.barIndex]
+		# reset index and items for new bar
+		self.barItemIndex = None
+		self.barItems = []
+		self.populateBar(bar)
+		return bar
+
+	def getBarItem(self, increment):
+		"""provides toolbar items circularly."""
+		# checks to avoid initial undesired skip
+		# scrolling toolbar items
+		if self.barItemIndex is None and increment > 0:
+			self.barItemIndex = 0
+		elif self.barItemIndex is None and increment < 0:
+			self.barItemIndex = -1
+		else:
+			self.barItemIndex = (self.barItemIndex+increment)%len(self.barItems)
+		return self.barItems[self.barItemIndex]
 
 	def script_finish(self, gesture):
 		self.finish(toggle=True, restoreMode=True, restoreObjects=True)
@@ -342,32 +414,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		):
 			self.finish(toggle=True, restoreMode=True)
 
-	def getBar(self, increment):
-		"""provides toolbars circularly."""
-		self.barIndex = (self.barIndex+increment)%len(self.bars)
-		bar = self.bars[self.barIndex]
-		# reset index and items for new bar
-		self.barItemIndex = None
-		self.barItems = []
-		self.populateBarItems(bar)
-		return bar
-
-	def getBarItem(self, increment):
-		"""provides toolbar items circularly."""
-		# after filters, there may be no items
-		# TODO: avoid this situation
-		if not self.barItems:
-			return
-		# checks to avoid initial undesired skip
-		# scrolling toolbar items
-		if self.barItemIndex is None and increment > 0:
-			self.barItemIndex = 0
-		elif self.barItemIndex is None and increment < 0:
-			self.barItemIndex = -1
-		else:
-			self.barItemIndex = (self.barItemIndex+increment)%len(self.barItems)
-		return self.barItems[self.barItemIndex]
-
 	def script_explore(self, gesture):
 		arrow = gesture.mainKeyName
 		# left and right to change toolbar,
@@ -380,6 +426,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			newObj = self.getBarItem(-1)
 		elif arrow == "downArrow":
 			newObj = self.getBarItem(+1)
+		# it should never happen, but, in case...
 		if not newObj:
 			# Translators: message presented when filtered toolbar has no elements
 			ui.reviewMessage(_("No toolbar item"))
@@ -392,7 +439,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# we have finished, regardless action result
 		self.finish(toggle=True, restoreMode=True)
 		# invoke activate action on current toolbar item
-		commands.script_review_activate(gesture)
+		runWithoutUiMessage(commands.script_review_activate, gesture)
 #	script_objActivate.__doc__ = _("performs default action on selected toolbar or its item")
 
 	def script_objLeftClick(self, gesture):
@@ -401,8 +448,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# we have finished, regardless action result
 		self.finish(toggle=True, restoreMode=True)
 		# click!
-		winUser.mouse_event(winUser.MOUSEEVENTF_LEFTDOWN,0,0,None,None)
-		winUser.mouse_event(winUser.MOUSEEVENTF_LEFTUP,0,0,None,None)
+		runWithoutUiMessage(commands.script_rightMouseClick, gesture)
 #	script_objLeftClick.__doc__ = _("performs mouse left click on selected toolbar or its item")
 
 	def script_objRightClick(self, gesture):
@@ -411,8 +457,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# we have finished, regardless action result
 		self.finish(toggle=True, restoreMode=True)
 		# click!
-		winUser.mouse_event(winUser.MOUSEEVENTF_RIGHTDOWN,0,0,None,None)
-		winUser.mouse_event(winUser.MOUSEEVENTF_RIGHTUP,0,0,None,None)
+		runWithoutUiMessage(commands.script_rightMouseClick, gesture)
 #	script_objRightClick.__doc__ = _("performs mouse right click on selected toolbar or its item")
 
 	__gestures = {
@@ -427,11 +472,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		script = globalPluginHandler.GlobalPlugin.getScript(self, gesture)
 		if not script:
 			# then script may exist, but it's *not* defined here
-			if not gesture.isCharacter:
-				# allow execution and terminate
+			if gesture.isCharacter or (gesture.isModifier and gesture.mainKeyName != "leftAlt"):
+				# suppress execution returning a fake function
+				script = lambda f: None
+			else:
+				# otherwise, allow execution and terminate
 				# TODO: terminate only if focus/nav change
 				self.finish(toggle=True, restoreMode=True)
 				return
-			# otherwise, suppress execution returning a fake function
-			script = lambda f: None
 		return script
