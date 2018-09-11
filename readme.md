@@ -24,7 +24,8 @@ Additionally, you can perform actions on toolbars or its items using any gesture
 ## Notes and suggestions
 
 * Exploration terminates implicitly performing an action on toolbar or its item, or pressing a non-mapped gesture (exceptions below), and explicitly pressing escape;
-* Character gestures ("h", "1" etc) are ignored and don't disable the exploration;
+* Character (h, 1, shift+h, etc) or modifier-only (shift, control) gestures are ignored and don't disable the exploration;
+* The add-on may fail in Mozilla applications the first time after add-on installation/update; please restart NVDA and Mozilla applications to resolve;
 * In LibreOffice, best configuration is probably default or single toolbar, set it on view menu/toolbar position.
 
 
