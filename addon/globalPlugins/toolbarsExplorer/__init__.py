@@ -448,7 +448,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# we have finished, regardless action result
 		self.finish(toggle=True, restoreMode=True)
 		# click!
-		runWithoutUiMessage(commands.script_rightMouseClick, gesture)
+		runWithoutUiMessage(commands.script_leftMouseClick, gesture)
 #	script_objLeftClick.__doc__ = _("performs mouse left click on selected toolbar or its item")
 
 	def script_objRightClick(self, gesture):
