@@ -21,10 +21,17 @@ During exploration, following gestures are available:
 
 Additionally, you can perform actions on toolbars or its items using any gesture provided by NVDA, as exactly as when you move to objects with standard object navigation.
 
-## Notes and suggestions
+## Notes
 
-* Exploration terminates implicitly performing an action on toolbar or its item, or pressing a non-mapped gesture (exceptions below), and explicitly pressing escape;
-* Character (h, 1, shift+h, etc) or modifier-only (shift, control) gestures are ignored and don't disable the exploration;
+Exploration is terminated  explicitly pressing escape, and implicitly:
+
+* performing an action on toolbar or its item (with space, applications/shift+F10, enter);
+* pressing a gesture that moves out of current toolbar objects (alt, windows, tab, NVDA+F1, object navigation gestures, etc).
+
+Other gestures not containing alt or windows (as h, 1, shift, shift+h, control+z) simply does nothing.
+
+## Suggestions
+
 * The add-on may fail in Mozilla applications the first time after add-on installation/update; please restart NVDA and Mozilla applications to resolve;
 * In LibreOffice, best configuration is probably default or single toolbar, set it on view menu/toolbar position.
 
