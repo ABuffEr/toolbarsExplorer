@@ -5,7 +5,6 @@
 # Add-on to facilitate toolbar management.
 # Partially inspired by ObjNav add-on, of Joseph Lee and others.
 
-#from NVDAObjects.window import Window as getNVDAObjectFromHandle
 from NVDAObjects.IAccessible import WindowRoot, getNVDAObjectFromEvent
 from globalCommands import commands, SCRCAT_OBJECTNAVIGATION
 from globalVars import desktopObject
@@ -14,8 +13,9 @@ from msg import message as NVDALocale
 import addonHandler
 import api
 import controlTypes as ct
-import ctypes
+import core
 import globalPluginHandler
+import os
 import review
 import speech
 import ui
@@ -34,7 +34,7 @@ def debugLog(message):
 import time
 from contextlib import contextmanager
 @contextmanager
-def timeblock(label):
+def measureTime(label):
 	start = time.clock()
 	try:
 		yield
@@ -42,10 +42,10 @@ def timeblock(label):
 		end = time.clock()
 		debugLog("%s: %.3f s"%(label, end-start))
 
-# Modified version of windowUtils.findDescendantWindow.
+import ctypes
 WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
 def findAllDescendantWindows(parent, visible=None, controlID=None, className=None):
-	"""Find all descendant windows, optionally matching specified visibility or className."""
+	"""See windowUtils.findDescendantWindow for parameters documentation."""
 	results = []
 	@WNDENUMPROC
 	def callback(window, data):
@@ -59,20 +59,20 @@ def findAllDescendantWindows(parent, visible=None, controlID=None, className=Non
 	# call previous func until it returns True,
 	# thus always, getting all windows
 	ctypes.windll.user32.EnumChildWindows(parent, callback, 0)
+	# return all results
 	return results
 
-# to avoid code copying to exclude ui.messages
+import config
+# to avoid code copying to exclude ui.message
 def runWithoutUiMessage(func, *args, **kwargs):
-	import speech
-	import config
 	configBackup = {"voice": speech.speechMode, "braille": config.conf["braille"]["messageTimeout"]}
 	speech.speechMode = speech.speechMode_off
-	config.conf["braille"]["messageTimeout"] = 0
+	config.conf["braille"]._cacheLeaf("messageTimeout", None, 0)
 	try:
 		func(*args, **kwargs)
 	finally:
 		speech.speechMode = configBackup["voice"]
-		config.conf["braille"]["messageTimeout"] = configBackup["braille"]
+		config.conf["braille"]._cacheLeaf("messageTimeout", None, configBackup["braille"])
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
@@ -91,7 +91,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# current application name
 		self.curAppName = None
 		# a backup of review mode, focus and navigator objects, prior exploration starting
-		self.startSnap = {}.fromkeys(("focus", "nav", "reviewMode"))
+		self.startSnap = {}.fromkeys(("focus", "nav", "foreground", "pid", "reviewMode"))
 		# toolbars found after search
 		self.bars = []
 		# index of current toolbar in exploration
@@ -264,7 +264,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def script_startExploration(self, gesture):
 		self.configVars()
-		with timeblock("Toolbars found in"):
+		with measureTime("Toolbars found in"):
 			self.findToolbars()
 		self.initialFilterBars()
 		if self.bars:
@@ -273,11 +273,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# Translators: message in applications without toolbars
 			ui.message(_("No toolbar found"))
 			return
-		# a initial objects backup
+		# a backup of various info, useful later
 		self.startSnap["focus"] = api.getFocusObject()
 		self.startSnap["nav"] = api.getNavigatorObject()
+		self.startSnap["foreground"] = api.getForegroundObject()
+		self.startSnap["pid"] = api.getFocusObject().processID
 		self.startSnap["reviewMode"] = review.getCurrentMode()
-		# for testing performances
+		# declare exploration started
 		self.exploring = True
 		# set object navigation active
 		review.setCurrentMode("object", updateReviewPosition=False)
@@ -383,12 +385,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		return self.barItems[self.barItemIndex]
 
 	def script_finish(self, gesture):
-		self.finish(toggle=True, restoreMode=True, restoreObjects=True)
+		self.finish(restoreMode=True, restoreObjects=True)
 #	script_finish.__doc__ = _("terminates toolbars exploration")
 
-	def finish(self, toggle=False, restoreMode=False, restoreObjects=False):
-		if not toggle:
-			return
+	def finish(self, restoreMode=False, restoreObjects=False):
 		self.exploring = False
 		self.clearGestureBindings()
 		self.bindGestures(self.__gestures)
@@ -400,19 +400,31 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			api.setNavigatorObject(self.startSnap["nav"])
 			speech.speakObject(self.startSnap["focus"], reason=ct.REASON_FOCUS)
 
-	# not used at the moment
-	def terminateIfNecessary(self):
+	def terminateIfNecessary(self, lastGesture):
 		"""Tries to establish whether we are still exploring toolbars."""
-		curNav = api.getNavigatorObject()
+		# a bit too extended, maybe, but more secure
 		curFocus = api.getFocusObject()
+		curNav = api.getNavigatorObject()
+		curForeground = api.getForegroundObject()
+		curPid = curFocus.processID
+		nvdaPid = os.getpid()
 		if (
 			# navigator is out of toolbars
 			(curNav not in self.bars and curNav not in self.barItems)
 			or
 			# focus is changed
 			(curFocus != self.startSnap["focus"])
+			or
+			# foreground window is changed
+			(curForeground != self.startSnap["foreground"])
+			or
+			# process is changed, or is NVDA (log viewer, console...)
+			(curPid != self.startSnap["pid"] or curPid == nvdaPid)
+			or
+			# user invoked menu start
+			(lastGesture.mainKeyName in ("leftWindows", "rightWindows"))
 		):
-			self.finish(toggle=True, restoreMode=True)
+			self.finish(restoreMode=True)
 
 	def script_explore(self, gesture):
 		arrow = gesture.mainKeyName
@@ -437,32 +449,28 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def script_objActivate(self, gesture):
 		# we have finished, regardless action result
-		self.finish(toggle=True, restoreMode=True)
+		self.finish(restoreMode=True)
 		# invoke activate action on current toolbar item
 		runWithoutUiMessage(commands.script_review_activate, gesture)
 #	script_objActivate.__doc__ = _("performs default action on selected toolbar or its item")
 
 	def script_objLeftClick(self, gesture):
 		# move mouse to current toolbar item
-		commands.script_moveMouseToNavigatorObject(gesture)
+		runWithoutUiMessage(commands.script_moveMouseToNavigatorObject, gesture)
 		# we have finished, regardless action result
-		self.finish(toggle=True, restoreMode=True)
+		self.finish(restoreMode=True)
 		# click!
 		runWithoutUiMessage(commands.script_leftMouseClick, gesture)
 #	script_objLeftClick.__doc__ = _("performs mouse left click on selected toolbar or its item")
 
 	def script_objRightClick(self, gesture):
 		# move mouse to current toolbar item
-		commands.script_moveMouseToNavigatorObject(gesture)
+		runWithoutUiMessage(commands.script_moveMouseToNavigatorObject, gesture)
 		# we have finished, regardless action result
-		self.finish(toggle=True, restoreMode=True)
+		self.finish(restoreMode=True)
 		# click!
 		runWithoutUiMessage(commands.script_rightMouseClick, gesture)
 #	script_objRightClick.__doc__ = _("performs mouse right click on selected toolbar or its item")
-
-	__gestures = {
-	"kb:alt+applications": "startExploration",
-	}
 
 	def getScript(self, gesture):
 		if not self.exploring:
@@ -470,14 +478,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return globalPluginHandler.GlobalPlugin.getScript(self, gesture)
 		# find script defined here as active during exploration
 		script = globalPluginHandler.GlobalPlugin.getScript(self, gesture)
-		if not script:
+		if script:
+			return script
+		else:
 			# then script may exist, but it's *not* defined here
-			if gesture.isCharacter or (gesture.isModifier and gesture.mainKeyName != "leftAlt"):
+			identifiers = set(gesture.identifiers[1][3:].split("+"))
+			allowed = set(("NVDA", "leftAlt", "alt", "leftWindows", "rightWindows", "windows", "tab"))
+			# suppress all gestures not containing allowed items
+			# as system command control+z, char web navigation, etc
+			# Note: numpad is to allow review gestures
+			if identifiers.isdisjoint(allowed) and "numpad" not in gesture.identifiers[1]:
 				# suppress execution returning a fake function
-				script = lambda f: None
+				debugLog("Suppress gesture %s"%gesture.identifiers[1])
+				return lambda f: None
 			else:
-				# otherwise, allow execution and terminate
-				# TODO: terminate only if focus/nav change
-				self.finish(toggle=True, restoreMode=True)
+				# otherwise, allow execution and terminate if necessary
+				# (when script action brings NVDA out of toolbars)
+				debugLog("Execute gesture %s"%gesture.identifiers[1])
+				core.callLater(150, self.terminateIfNecessary, gesture)
 				return
-		return script
+
+	__gestures = {
+	"kb:alt+applications": "startExploration",
+	}
