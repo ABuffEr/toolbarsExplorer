@@ -29,7 +29,7 @@ Exploration is terminated  explicitly pressing escape, and implicitly:
 * performing an action on toolbar or its item (with space, applications/shift+F10, enter);
 * pressing a gesture that moves out of current toolbar objects (alt, windows, tab, NVDA+F1, object navigation gestures, etc).
 
-Other gestures not containing alt or windows (as h, 1, shift, shift+h, control+z) simply does nothing.
+Other gestures not containing alt, windows or escape (as h, 1, shift, shift+h, control+z) simply does nothing.
 
 ## Suggestions
 
@@ -38,4 +38,5 @@ Other gestures not containing alt or windows (as h, 1, shift, shift+h, control+z
 
 
 [1]: https://addons.nvda-project.org/files/get.php?file=tbx
+
 [2]: https://addons.nvda-project.org/files/get.php?file=tbx-dev

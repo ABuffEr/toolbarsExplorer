@@ -335,7 +335,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		for child in children:
 			if (
 				# exclude invisible and not focusable objects
-				(ct.STATE_INVISIBLE in child.states and not child.isFocusable)
+				# but not in Calibre, where hide preferences
+				(self.curAppName not in ("calibre",) and ct.STATE_INVISIBLE in child.states and not child.isFocusable)
 				or
 				# exclude separators and unknown objects
 				(child.role in (ct.ROLE_SEPARATOR, ct.ROLE_UNKNOWN,))
@@ -421,8 +422,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			# process is changed, or is NVDA (log viewer, console...)
 			(curPid != self.startSnap["pid"] or curPid == nvdaPid)
 			or
-			# user invoked menu start
-			(lastGesture.mainKeyName in ("leftWindows", "rightWindows"))
+			# user invoked menu start or
+			# pressed escape (with other keys)
+			(lastGesture.mainKeyName in ("leftWindows", "rightWindows", "escape"))
 		):
 			self.finish(restoreMode=True)
 
@@ -483,10 +485,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		else:
 			# then script may exist, but it's *not* defined here
 			identifiers = set(gesture.identifiers[1][3:].split("+"))
-			allowed = set(("NVDA", "leftAlt", "alt", "leftWindows", "rightWindows", "windows", "tab"))
+			allowed = set(("NVDA", "leftAlt", "alt", "leftWindows", "rightWindows", "windows", "tab", "escape"))
 			# suppress all gestures not containing allowed items
 			# as system command control+z, char web navigation, etc
-			# Note: numpad is to allow review gestures
+			# Notes: numpad is to allow review gestures,
+			# escape here is in combination with other keys (control, shift, both)
 			if identifiers.isdisjoint(allowed) and "numpad" not in gesture.identifiers[1]:
 				# suppress execution returning a fake function
 				debugLog("Suppress gesture %s"%gesture.identifiers[1])

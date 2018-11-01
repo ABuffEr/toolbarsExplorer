@@ -19,11 +19,11 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 	"addon_description" : _("""Add-on to facilitate toolbars management."""),
 	# version
-	"addon_version" : "1.0-20180914-dev",
+	"addon_version" : "1.0-20181101-dev",
 	# Author(s)
 	"addon_author" : u"Alberto Buffolino <a.buffolino@gmail.com>",
 	# URL for the add-on documentation support
-	"addon_url" : None,
+	"addon_url" : "https://addons.nvda-project.org/",
 	# Documentation file name
 	"addon_docFileName" : "readme.html",
 }
