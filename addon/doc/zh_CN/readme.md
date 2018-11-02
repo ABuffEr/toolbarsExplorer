@@ -28,7 +28,7 @@
 * 在工具栏或其项目上执行操作（请使用 space, applications/shift+F10, enter)快捷键;
 * 按下移出当前工具栏对象的手势可用以下快捷键 (alt, windows, tab, NVDA+F1, 对象导航手势等）。
 
-其他不包含alt或windows的手势 (如 h, 1, shift, shift+h, control+z)按下以上快捷键不会有任何效果。
+其他不包含alt，windows或转义的手势（如h，1，shift，shift + h，control + z）按下以上首饰后将无效。
 
 ## 使用建议
 

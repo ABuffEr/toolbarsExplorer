@@ -41,8 +41,8 @@ implíccitamente:
   herramientas (alt, Windows, tabulador, NVDA+f1, gestos de navegación por
   objetos, etc).
 
-Otros gestos que no contengan alt o Windows (como h, 1, shift, shift+h,
-ctrl+z) simplemente no hacen nada.
+Otros gestos que no contengan alt, Windows o escape (como h, 1, shift,
+shift+h, ctrl+z) simplemente no hacen nada.
 
 ## Sugerencias
 

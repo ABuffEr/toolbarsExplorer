@@ -38,8 +38,8 @@ implicitement:
 * en appuyant sur le geste qui sort des objets de la barre d'outils actuelle
   (alt, windows, tab, NVDA+F1, gestes de navigation par objet, etc.).
 
-D'autres gestes ne contenant pas alt ou windows (comme h, 1, maj, maj+h,
-contrôle+z) simplement ne fait rien.
+D'autres gestes ne contenant pas alt, windows ou échap (comme h, 1, maj,
+maj+h, contrôle+z) simplement ne fait rien.
 
 ## Suggestions
 

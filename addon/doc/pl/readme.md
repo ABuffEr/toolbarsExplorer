@@ -39,8 +39,8 @@ Eksplorację jawnie kończy naciśnięcie klawisza Escape, a także niejawnie.
 * naciśmnięcie gestu wyprowadzającego z aktualnego paska narzędzi (alt,
   windows, tab, NVDA+F1, nawigacja objektowa itd).
 
-Inne gesty włączając w to klawisze (takie jak h, 1, shift, shift+h,
-control+z) po prostu nie robią nic.
+Other gestures not containing alt, windows or escape (as h, 1, shift,
+shift+h, control+z) simply does nothing.
 
 ## sugestie
 
