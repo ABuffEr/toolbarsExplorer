@@ -39,8 +39,8 @@ suoritettaessa toimintoa työkalupalkille tai sen kohteelle sekä:
   Sarkain-näppäimen ja NVDA+F1-yhdistelmän painaminen,
   objektinavigointikomennot jne.).
 
-Other gestures not containing alt, windows or escape (as h, 1, shift,
-shift+h, control+z) simply does nothing.
+Muut komennot, joihin ei sisälly Alt-, Windows- tai Esc-näppäintä (kuten H,
+1, Vaihto, Vaihto+H, Ctrl+Z) eivät tee mitään.
 
 ## Ehdotuksia
 

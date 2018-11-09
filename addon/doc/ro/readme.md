@@ -39,8 +39,8 @@ Explicit, explorarea se termină la apăsarea tastei Escape, iar implicit:
   curente (alt, windows, tab, NVDA+F1, gesturi de navigare ale obiectelor
   etc).
 
-Other gestures not containing alt, windows or escape (as h, 1, shift,
-shift+h, control+z) simply does nothing.
+Alte gesturi care nu conțin alt, windows sau escape (ca h, 1, shift,
+shift+h, control+z) pur și simplu nu fac nimic.
 
 ## Sugestii
 
