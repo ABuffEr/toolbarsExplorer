@@ -40,8 +40,8 @@ seus itens;
 * Pressionar um comando que sai da barra de ferramentas actual (alt, tecla
   windows, tab, NVDA+F1, comandos de navegação por objectos, etc).
 
-outros comandos que não contenham alt ou a tecla windows (como h, 1, shift,
-shift+h, control+z) não fazem nada.
+outros comandos que não contenham alt ou a tecla windows ou escape (como h,
+1, shift, shift+h, control+z) não fazem nada.
 
 ## Sugestões:
 

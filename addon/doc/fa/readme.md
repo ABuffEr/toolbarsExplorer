@@ -35,8 +35,8 @@ Exploration is terminated explicitly pressing escape, and implicitly:
 * pressing a gesture that moves out of current toolbar objects (alt,
   windows, tab, NVDA+F1, object navigation gestures, etc).
 
-Other gestures not containing alt or windows (as h, 1, shift, shift+h,
-control+z) simply does nothing.
+Other gestures not containing alt, windows or escape (as h, 1, shift,
+shift+h, control+z) simply does nothing.
 
 ## Suggestions
 

@@ -1,0 +1,40 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the toolbarsExplorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: toolbarsExplorer 1.0-20180914-dev\n"
+"Report-Msgid-Bugs-To: nvda-translations@freelists.org\n"
+"POT-Creation-Date: 2018-10-26 20:10+1000\n"
+"PO-Revision-Date: 2018-10-30 13:00+0300\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"X-Generator: Poedit 2.2\n"
+
+#. Translators: message in applications without toolbars
+msgid "No toolbar found"
+msgstr "Araç çubuğu bulunamadı"
+
+#. Translators: input help mode message for ToolbarsExplorer start command.
+msgid "Starts exploration of toolbars, if present in current application"
+msgstr "Açık uygulama içinde varsa, araç çubuklarını araştırma işlemini başlatır"
+
+#. Translators: message presented when filtered toolbar has no elements
+msgid "No toolbar item"
+msgstr "Araç çubuğu öğesi yok"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on to be shown on installation and add-on information.
+msgid "ToolbarsExplorer"
+msgstr "ToolbarsExplorer"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid "Add-on to facilitate toolbars management."
+msgstr "Araç çubukları yönetimini kolaylaştırmak için eklenti."
