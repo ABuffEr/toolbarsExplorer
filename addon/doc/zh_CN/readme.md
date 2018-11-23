@@ -1,4 +1,4 @@
-# ToolbarsExplorer资源管理器插件 #
+# ToolbarsExplorer工具栏快速导航插件 #
 
 * 作者: Alberto Buffolino
 * 下载[稳定版][1]
