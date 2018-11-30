@@ -1,0 +1,40 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the toolbarsExplorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: toolbarsExplorer 1.0-20180914-dev\n"
+"Report-Msgid-Bugs-To: nvda-translations@freelists.org\n"
+"POT-Creation-Date: 2018-11-23 20:10+1000\n"
+"PO-Revision-Date: 2018-11-29 19:03+0100\n"
+"Language: da\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Last-Translator: Nicolai Svendsen <chojiro1990@gmail.com>\n"
+"Language-Team: \n"
+"X-Generator: Poedit 2.2\n"
+
+#. Translators: message in applications without toolbars
+msgid "No toolbar found"
+msgstr "Ingen værktøjslinje fundet"
+
+#. Translators: input help mode message for ToolbarsExplorer start command.
+msgid "Starts exploration of toolbars, if present in current application"
+msgstr "Starter udforskning af værktøjslinjer, hvis de er til stede i den aktuelle applikation"
+
+#. Translators: message presented when filtered toolbar has no elements
+msgid "No toolbar item"
+msgstr "Intet emne på værktøjslinje"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on to be shown on installation and add-on information.
+msgid "ToolbarsExplorer"
+msgstr "Udforsk Værktøjslinjer"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid "Add-on to facilitate toolbars management."
+msgstr "Tilføjelse til udforskning af værktøjslinjer."
