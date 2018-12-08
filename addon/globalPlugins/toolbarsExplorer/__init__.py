@@ -24,7 +24,7 @@ import winUser
 addonHandler.initTranslation()
 
 # to enable logging
-DEBUG = False
+DEBUG = True
 
 def debugLog(message):
 	if DEBUG:
@@ -181,37 +181,42 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			outRoot = False
 		else:
 			outRoot = True
-		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR, outRoot=outRoot)
+		if self.curAppName in ("chrome",):
+			rtl = False
+		else:
+			rtl = True
+		debugLog("Launching search with rtl=%s, outRoot=%s"%(rtl,outRoot))
+		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR, rtl=rtl, outRoot=outRoot)
 		# search gives bars in reverse order, so...
 		self.bars.reverse()
 
-	def recursiveSearch(self, obj, matchRole, outRoot=True):
+	def recursiveSearch(self, obj, matchRole, rtl, outRoot=True):
 		"""performs a filtered depth-first, right-to-left, recursive search on object hierarchy."""
 		debugLog("Analyzing %s: %s"%(obj.name,obj))
 		if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
-			childObj = obj.simpleLastChild
+			childObj = obj.simpleLastChild if rtl else obj.simpleFirstChild
 			if childObj:
 				debugLog("Go down")
-				self.recursiveSearch(childObj, matchRole)
+				self.recursiveSearch(childObj, matchRole, rtl)
 		elif obj.role == matchRole:
 			self.bars.append(obj)
 		# outRoot on False limits out-of-root search in first recursion
 		if not outRoot:
 			return
-		prevObj = obj.simplePrevious
-		if prevObj:
-			prevAppName = prevObj.appModule.appName if prevObj.appModule else None
+		newObj = obj.simplePrevious if rtl else obj.simpleNext
+		if newObj:
+			newAppName = newObj.appModule.appName if newObj.appModule else None
 			if (
-				(prevObj.simpleParent != desktopObject)
+				(newObj.simpleParent != desktopObject)
 				or
 				# LibreOffice use a non-relative dialog in certain configurations
-				(prevObj.role == ct.ROLE_DIALOG and prevAppName == self.curAppName)
+				(newObj.role == ct.ROLE_DIALOG and newAppName == self.curAppName)
 				or
 				# try to manage starting from desktop list
-				(prevObj.simpleParent == self.root == desktopObject and (prevAppName, self.curAppName) == ("explorer", "csrss"))
+				(newObj.simpleParent == self.root == desktopObject and (newAppName, self.curAppName) == ("explorer", "csrss"))
 			):
-				debugLog("Go previous")
-				self.recursiveSearch(prevObj, matchRole)
+				debugLog("Go previous" if rtl else "Go next")
+				self.recursiveSearch(newObj, matchRole, rtl)
 
 	def nonrecursiveSearch(self, obj, matchRole):
 		"""performs a filtered breadth-first, nonrecursive search on object hierarchy.
