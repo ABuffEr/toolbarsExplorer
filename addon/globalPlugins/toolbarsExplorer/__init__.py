@@ -24,7 +24,7 @@ import winUser
 addonHandler.initTranslation()
 
 # to enable logging
-DEBUG = True
+DEBUG = False
 
 def debugLog(message):
 	if DEBUG:
@@ -114,9 +114,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def getRoot(self):
 		"""selects or adjusts root object for search."""
-		for ancestor in api.getFocusAncestors():
+		ancestors = api.getFocusAncestors()
+		for ancestor in ancestors:
 			if isinstance(ancestor, WindowRoot):
 				self.root = ancestor
+				debugLog("Use WindowRoot instance for root")
 				break
 		curFocus = api.getFocusObject()
 		self.curAppName = curFocus.appModule.appName if curFocus.appModule else None
@@ -135,6 +137,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self.root = curFocus.simpleParent.simpleParent
 			# adjust appName as specified in desktopObject above (see condition later)
 			self.curAppName = "csrss"
+		# try a generic solution
+		if (
+			(not self.root)
+			and
+			(ancestors[0] == desktopObject)
+			and
+			(ancestors[1].appModule and ancestors[1].appModule.appName == self.curAppName)
+		):
+			debugLog("Use ancestors[1] for root")
+			self.root = ancestors[1]
+
 
 	def searchLauncher(self):
 		"""chooses and launch appropriate search method."""
