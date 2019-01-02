@@ -24,7 +24,7 @@ import winUser
 addonHandler.initTranslation()
 
 # to enable logging
-DEBUG = True
+DEBUG = False
 
 def debugLog(message):
 	if DEBUG:
