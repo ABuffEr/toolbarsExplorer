@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: toolbarsExplorer 1.0-20180914-dev\n"
 "Report-Msgid-Bugs-To: nvda-translations@freelists.org\n"
 "POT-Creation-Date: 2018-10-26 20:10+1000\n"
-"PO-Revision-Date: 2018-10-26 16:56+0300\n"
+"PO-Revision-Date: 2019-03-12 16:04+0200\n"
 "Language: bg\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Last-Translator: Kostadin Kolev <k_kolev1985@mail.bg>\n"
 "Language-Team: \n"
-"X-Generator: Poedit 2.2\n"
+"X-Generator: Poedit 1.6.10\n"
 
 #. Translators: message in applications without toolbars
 msgid "No toolbar found"
@@ -23,7 +23,9 @@ msgstr "Няма открита лента с инструменти"
 
 #. Translators: input help mode message for ToolbarsExplorer start command.
 msgid "Starts exploration of toolbars, if present in current application"
-msgstr "Започва обхождането на лентите с инструменти, ако има такива в текущото приложение"
+msgstr ""
+"Започва обхождането на лентите с инструменти, ако има такива в текущото "
+"приложение"
 
 #. Translators: message presented when filtered toolbar has no elements
 msgid "No toolbar item"
@@ -37,4 +39,4 @@ msgstr "Изследване на ленти с инструменти"
 #. Add-on description
 #. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 msgid "Add-on to facilitate toolbars management."
-msgstr "Добавка улесняваща работата с ленти с инструменти."
+msgstr "Добавка, улесняваща работата с ленти с инструменти."
