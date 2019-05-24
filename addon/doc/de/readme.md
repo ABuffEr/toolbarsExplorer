@@ -2,7 +2,7 @@
 
 * Autor: Alberto Buffolino
 * [Stabile Version herunterladen][1]
-* [Entwicklungsversion herunterladen][2]
+* [Entwicklerversion herunterladen][2]
 
 Diese Erweiterung erleichtert die Verwendung von Symbolleisten in
 Anwendungen und bietet ein Erkundungsmodell, das durch Objektnavigation mit
