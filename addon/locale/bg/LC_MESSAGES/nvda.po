@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: toolbarsExplorer 1.0-20180914-dev\n"
-"Report-Msgid-Bugs-To: nvda-translations@freelists.org\n"
+"Report-Msgid-Bugs-To: nvda-translations@groups.io\n"
 "POT-Creation-Date: 2018-10-26 20:10+1000\n"
 "PO-Revision-Date: 2019-03-12 16:04+0200\n"
 "Language: bg\n"
