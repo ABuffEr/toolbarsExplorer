@@ -4,7 +4,7 @@
 * Télécharger [version stable][1]
 * Télécharger [version de développement][2]
 
-Ce module complémentaire facilite l'utilisation des barres d'outils dans les
+Cette extension facilite l'utilisation des barres d'outils dans les
 applications, fournissant un modèle d'exploration dérivé de la navigation
 par objet, avec des gestes simplifiés.
 
@@ -43,9 +43,9 @@ maj+h, contrôle+z) simplement ne fait rien.
 
 ## Suggestions
 
-* Le module complémentaire peut échouer dans les applications Mozilla la
-  première fois après l'installation / mise à jour du module complémentaire
-  ; Veuillez redémarrer les applications NVDA et Mozilla pour résoudre ;
+* L'extension peut échouer dans les applications Mozilla la première fois
+  après l'installation / mise à jour de l'extension; Veuillez redémarrer les
+  applications NVDA et Mozilla pour résoudre ;
 * Dans LibreOffice, la meilleure configuration est probablement la barre
   d'outils par défaut ou unique, définissez-la dans le menu Affichage /
   Position des barre d'outils.
