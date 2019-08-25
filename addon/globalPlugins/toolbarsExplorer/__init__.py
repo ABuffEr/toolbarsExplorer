@@ -9,7 +9,7 @@ from NVDAObjects.IAccessible import WindowRoot, getNVDAObjectFromEvent
 from globalCommands import commands, SCRCAT_OBJECTNAVIGATION
 from globalVars import desktopObject
 from logHandler import log
-from msg import message as NVDALocale
+from .msg import message as NVDALocale
 import addonHandler
 import api
 import controlTypes as ct

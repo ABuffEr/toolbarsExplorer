@@ -19,7 +19,7 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 	"addon_description" : _("""Add-on to facilitate toolbars management."""),
 	# version
-	"addon_version" : "1.4-20190823-dev",
+	"addon_version" : "1.4-20190825-dev",
 	# Author(s)
 	"addon_author" : u"Alberto Buffolino <a.buffolino@gmail.com>",
 	# URL for the add-on documentation support
@@ -29,7 +29,7 @@ addon_info = {
 	# Minimum NVDA version supported (e.g. "2018.3")
 	"addon_minimumNVDAVersion" : "2017.3",
 	# Last NVDA version supported/tested (e.g. "2018.4", ideally more recent than minimum version)
-	"addon_lastTestedNVDAVersion" : "2019.2",
+	"addon_lastTestedNVDAVersion" : "2019.3",
 	# Add-on update channel (default is stable)
 	"addon_updateChannel" : "dev",
 }
