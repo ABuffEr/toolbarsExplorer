@@ -20,8 +20,8 @@ TIjekom istraživanja su dostupne sljedeće geste:
 * Enter: aktivira alatnu traku ili njenu stavku;
 * Razmaknica: simulira klik lijevom tipkom miša na alatnu traku ili njenu
   stavku;
-* Aplikacije/shift+F10: simulira klik lijevom tipkom miša na alatnu traku
-  ili njenu stavku;
+* Aplikacije/šift+F10: simulira klik lijevom tipkom miša na alatnu traku ili
+  njenu stavku;
 * Escape: izlazi iz istraživanja.
 
 Dodatno tome je moguće izvršavati radnje na alatnim trakama ili njenim
@@ -33,13 +33,13 @@ korisnik kreće po objektima sa standardnom navigacijom po objekatima.
 Istraživanje se prekida direktnim pritiskom tipke escape, a inače:
 
 * izvršavanjem radnje na alatnoj traci ili njenoj stavci (s razmaknicom,
-  aplikacije/shift+F10, enter);
+  aplikacije/šift+F10, enter);
 * pritiskom geste, kojom se premješta izvan trenutačnih objekata alatne
   trake (alt, windows, tabulator, NVDA+F1, geste za navigaciju po objektima
   itd.).
 
-Druge geste koje ne sadrže tipke alt, windows ili escape (kao h, 1, shift,
-shift+h, control+z) jednostavno ne rade ništa.
+Druge geste koje ne sadrže tipke alt, windows ili escape (kao h, 1, šift,
+šift+h, kontrol+z) jednostavno ne rade ništa.
 
 ## Prijedlozi
 
