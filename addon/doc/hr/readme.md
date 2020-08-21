@@ -1,6 +1,6 @@
 # Istraživanje alatnih traka (ToolbarsExplorer) #
 
-* Author: Alberto Buffolino
+* Autor: Alberto Buffolino
 * Preuzmi [stabilnu verziju][1]
 * Preuzmi [razvojnu verziju][2]
 
