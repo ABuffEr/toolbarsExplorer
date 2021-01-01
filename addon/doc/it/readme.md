@@ -1,8 +1,8 @@
 # ToolbarsExplorer #
 
 * Autore: Alberto Buffolino
-* Download [versione stabile][1]
-* Download [versione in sviluppo][2]
+* Scarica la [versione stabile][1]
+* Scarica la [versione in sviluppo][2]
 
 Questo componente aggiuntivo rende più semplice l'utilizzo delle barre degli
 strumenti nelle applicazioni, fornendo un modello di esplorazione derivato
@@ -10,12 +10,13 @@ dalla navigazione ad oggetti, con comandi semplificati.
 
 ## Comandi
 
-* Alt+tasto applicazioni: entra in modalità navigazione barre strumenti<br/>
-(è possibile rimappare la combinazione attraverso la gestione gesti e tasti d'immissione di NVDA, sotto Navigazione oggetti).
+* Alt+tasto applicazioni: entra in modalità esplorazione barre strumenti<br/>
+(è possibile rimappare la combinazione attraverso la gestione gesti e tasti d'immissione di NVDA, categoria Navigazione oggetti).
 
-Durante la modalità esplorazione, sono attivi i seguenti tasti:
+Durante la modalità esplorazione barre strumenti, sono attivi i seguenti
+tasti:
 
-* Freccia sinistra/destra: si muove alla barra strumenti
+* Freccia sinistra/destra: si sposta alla barra strumenti
   precedente/successiva;
 * Freccia su/giù: scorre su/giù gli elementi nella barra strumenti attuale;
 * Invio: attiva la barra strumenti o un suo elemento;
@@ -23,7 +24,7 @@ Durante la modalità esplorazione, sono attivi i seguenti tasti:
   barra strumenti o su un suo elemento;
 * Tasto applicazioni/shift+F10: simula il click del tasto destro del mouse
   sulla barra strumenti o su un suo elemento;
-* Esc: esce dalla modalità esplorazione.
+* Esc: esce dalla modalità esplorazione barra strumenti.
 
 In aggiunta, è possibile eseguire azioni sulle barre strumenti o sui loro
 elementi utilizzando un qualsiasi comando fornito da NVDA, esattamente come
