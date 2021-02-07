@@ -23,6 +23,9 @@ import winUser
 
 addonHandler.initTranslation()
 
+# for compatibility
+REASON_FOCUS = ct.OutputReason.FOCUS if hasattr(ct, "OutputReason") else ct.FOCUS_REASON
+
 # to enable logging
 DEBUG = False
 
@@ -311,7 +314,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.bindGesture("kb:shift+f10", "objRightClick")
 		bar = self.bars[self.barIndex]
 		api.setNavigatorObject(bar)
-		speech.speakObject(bar, reason=ct.REASON_FOCUS)
+		speech.speakObject(bar, reason=REASON_FOCUS)
 	# Translators: input help mode message for ToolbarsExplorer start command.
 	script_startExploration.__doc__ = _("Starts exploration of toolbars, if present in current application")
 
@@ -416,7 +419,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if restoreObjects:
 			api.setFocusObject(self.startSnap["focus"])
 			api.setNavigatorObject(self.startSnap["nav"])
-			speech.speakObject(self.startSnap["focus"], reason=ct.REASON_FOCUS)
+			speech.speakObject(self.startSnap["focus"], reason=REASON_FOCUS)
 
 	def terminateIfNecessary(self, lastGesture):
 		"""Tries to establish whether we are still exploring toolbars."""
@@ -462,7 +465,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			ui.reviewMessage(_("No toolbar item"))
 			return
 		api.setNavigatorObject(newObj)
-		speech.speakObject(newObj, reason=ct.REASON_FOCUS)
+		speech.speakObject(newObj, reason=REASON_FOCUS)
 #	script_explore.__doc__ = _("moves between toolbars and their items")
 
 	def script_objActivate(self, gesture):
