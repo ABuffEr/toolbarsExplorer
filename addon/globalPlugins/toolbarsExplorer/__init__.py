@@ -38,11 +38,11 @@ import time
 from contextlib import contextmanager
 @contextmanager
 def measureTime(label):
-	start = time.clock()
+	start = time.time()
 	try:
 		yield
 	finally:
-		end = time.clock()
+		end = time.time()
 		debugLog("%s: %.3f s"%(label, end-start))
 
 import ctypes
