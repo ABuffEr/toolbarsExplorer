@@ -65,16 +65,24 @@ def findAllDescendantWindows(parent, visible=None, controlID=None, className=Non
 	# return all results
 	return results
 
-import config
 # to avoid code copying to exclude ui.message
 def runWithoutUiMessage(func, *args, **kwargs):
-	configBackup = {"voice": speech.speechMode, "braille": config.conf["braille"]["messageTimeout"]}
-	speech.speechMode = speech.speechMode_off
+	import config
+	from versionInfo import version_year as mainVersion
+	curSpeechMode = speech.speechMode if mainVersion<2021 else speech.getState().speechMode
+	configBackup = {"voice": curSpeechMode, "braille": config.conf["braille"]["messageTimeout"]}
+	if mainVersion<2021:
+		speech.speechMode = speech.speechMode_off
+	else:
+		speech.setSpeechMode(speech.SpeechMode.off)
 	config.conf["braille"]._cacheLeaf("messageTimeout", None, 0)
 	try:
 		func(*args, **kwargs)
 	finally:
-		speech.speechMode = configBackup["voice"]
+		if mainVersion<2021:
+			speech.speechMode = configBackup["voice"]
+		else:
+			speech.setSpeechMode(configBackup["voice"])
 		config.conf["braille"]._cacheLeaf("messageTimeout", None, configBackup["braille"])
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
