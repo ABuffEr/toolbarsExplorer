@@ -24,10 +24,10 @@ import winUser
 addonHandler.initTranslation()
 
 # for compatibility
-REASON_FOCUS = ct.OutputReason.FOCUS if hasattr(ct, "OutputReason") else ct.FOCUS_REASON
+REASON_FOCUS = ct.OutputReason.FOCUS if hasattr(ct, "OutputReason") else ct.REASON_FOCUS
 
 # to enable logging
-DEBUG = False
+DEBUG = True
 
 def debugLog(message):
 	if DEBUG:
@@ -201,7 +201,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def slowSearch(self):
 		"""search toolbars using object navigation."""
-		if self.curAppName in ("thunderbird",):
+		if self.curAppName in ("thunderbird","firefox","chrome",):
 			outRoot = False
 		else:
 			outRoot = True
@@ -214,7 +214,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# search gives bars in reverse order, so...
 		self.bars.reverse()
 
-	def recursiveSearch(self, obj, matchRole, rtl, outRoot=True):
+	def recursiveSearch(self, obj, matchRole, rtl=True, outRoot=True):
 		"""performs a filtered depth-first, right-to-left, recursive search on object hierarchy."""
 		debugLog("Analyzing %s: %s"%(obj.name,obj))
 		if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
