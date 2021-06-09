@@ -38,4 +38,4 @@ Other gestures not containing alt, windows or escape (as h, 1, shift, shift+h, c
 
 [1]: https://addons.nvda-project.org/files/get.php?file=tbx
 [2]: https://addons.nvda-project.org/files/get.php?file=tbx-dev
-[3]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/packages/toolbarsExplorer-1.4-20210513-dev.nvda-addon
+[3]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/packages/toolbarsExplorer-1.4-20210609-dev.nvda-addon
