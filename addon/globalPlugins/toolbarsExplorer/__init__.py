@@ -27,7 +27,7 @@ addonHandler.initTranslation()
 REASON_FOCUS = ct.OutputReason.FOCUS if hasattr(ct, "OutputReason") else ct.REASON_FOCUS
 
 # to enable logging
-DEBUG = True
+DEBUG = False
 
 def debugLog(message):
 	if DEBUG:
