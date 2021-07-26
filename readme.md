@@ -1,7 +1,8 @@
-# ToolbarsExplorer #
+# ToolbarsExplorer
 
 * Author: Alberto Buffolino
-* Download [development version][3]
+* Download [stable version][1]
+* Download [development version][2]
 
 This add-on makes easier to use toolbars in applications, providing an exploration model derived by object navigation, with simplified gestures.
 
@@ -37,5 +38,5 @@ Other gestures not containing alt, windows or escape (as h, 1, shift, shift+h, c
 
 
 [1]: https://addons.nvda-project.org/files/get.php?file=tbx
+
 [2]: https://addons.nvda-project.org/files/get.php?file=tbx-dev
-[3]: https://raw.githubusercontent.com/ABuffEr/toolbarsExplorer/master/packages/toolbarsExplorer-1.4-20210609-dev.nvda-addon
