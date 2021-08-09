@@ -1,4 +1,4 @@
-# ToolbarsExplorer #
+# ToolbarsExplorer
 
 * Author: Alberto Buffolino
 * Download [stable version][1]

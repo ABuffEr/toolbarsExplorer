@@ -23,6 +23,9 @@ import winUser
 
 addonHandler.initTranslation()
 
+# for compatibility
+REASON_FOCUS = ct.OutputReason.FOCUS if hasattr(ct, "OutputReason") else ct.REASON_FOCUS
+
 # to enable logging
 DEBUG = False
 
@@ -35,11 +38,11 @@ import time
 from contextlib import contextmanager
 @contextmanager
 def measureTime(label):
-	start = time.clock()
+	start = time.time()
 	try:
 		yield
 	finally:
-		end = time.clock()
+		end = time.time()
 		debugLog("%s: %.3f s"%(label, end-start))
 
 import ctypes
@@ -62,16 +65,24 @@ def findAllDescendantWindows(parent, visible=None, controlID=None, className=Non
 	# return all results
 	return results
 
-import config
 # to avoid code copying to exclude ui.message
 def runWithoutUiMessage(func, *args, **kwargs):
-	configBackup = {"voice": speech.speechMode, "braille": config.conf["braille"]["messageTimeout"]}
-	speech.speechMode = speech.speechMode_off
+	import config
+	from versionInfo import version_year as mainVersion
+	curSpeechMode = speech.speechMode if mainVersion<2021 else speech.getState().speechMode
+	configBackup = {"voice": curSpeechMode, "braille": config.conf["braille"]["messageTimeout"]}
+	if mainVersion<2021:
+		speech.speechMode = speech.speechMode_off
+	else:
+		speech.setSpeechMode(speech.SpeechMode.off)
 	config.conf["braille"]._cacheLeaf("messageTimeout", None, 0)
 	try:
 		func(*args, **kwargs)
 	finally:
-		speech.speechMode = configBackup["voice"]
+		if mainVersion<2021:
+			speech.speechMode = configBackup["voice"]
+		else:
+			speech.setSpeechMode(configBackup["voice"])
 		config.conf["braille"]._cacheLeaf("messageTimeout", None, configBackup["braille"])
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -190,7 +201,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def slowSearch(self):
 		"""search toolbars using object navigation."""
-		if self.curAppName in ("thunderbird",):
+		if self.curAppName in ("thunderbird","firefox","chrome",):
 			outRoot = False
 		else:
 			outRoot = True
@@ -203,7 +214,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# search gives bars in reverse order, so...
 		self.bars.reverse()
 
-	def recursiveSearch(self, obj, matchRole, rtl, outRoot=True):
+	def recursiveSearch(self, obj, matchRole, rtl=True, outRoot=True):
 		"""performs a filtered depth-first, right-to-left, recursive search on object hierarchy."""
 		debugLog("Analyzing %s: %s"%(obj.name,obj))
 		if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
@@ -311,7 +322,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.bindGesture("kb:shift+f10", "objRightClick")
 		bar = self.bars[self.barIndex]
 		api.setNavigatorObject(bar)
-		speech.speakObject(bar, reason=ct.REASON_FOCUS)
+		speech.speakObject(bar, reason=REASON_FOCUS)
 	# Translators: input help mode message for ToolbarsExplorer start command.
 	script_startExploration.__doc__ = _("Starts exploration of toolbars, if present in current application")
 
@@ -416,7 +427,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if restoreObjects:
 			api.setFocusObject(self.startSnap["focus"])
 			api.setNavigatorObject(self.startSnap["nav"])
-			speech.speakObject(self.startSnap["focus"], reason=ct.REASON_FOCUS)
+			speech.speakObject(self.startSnap["focus"], reason=REASON_FOCUS)
 
 	def terminateIfNecessary(self, lastGesture):
 		"""Tries to establish whether we are still exploring toolbars."""
@@ -462,7 +473,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			ui.reviewMessage(_("No toolbar item"))
 			return
 		api.setNavigatorObject(newObj)
-		speech.speakObject(newObj, reason=ct.REASON_FOCUS)
+		speech.speakObject(newObj, reason=REASON_FOCUS)
 #	script_explore.__doc__ = _("moves between toolbars and their items")
 
 	def script_objActivate(self, gesture):
