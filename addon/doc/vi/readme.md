@@ -1,7 +1,7 @@
 # ToolbarsExplorer #
 
 * Tác giả: Alberto Buffolino
-* Tải về [phiên bản thử nghiệm][1]
+* Tải về [phiên bản chính thức][1]
 * Tải về [phiên bản thử nghiệm][2]
 
 Add-on này giúp việc sử dụng các thanh công cụ trong các ứng dụng trở nên dễ
