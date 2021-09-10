@@ -1,0 +1,40 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the toolbarsExplorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: toolbarsExplorer 1.4\n"
+"Report-Msgid-Bugs-To: nvda-translations@freelists.org\n"
+"POT-Creation-Date: 2021-02-19 20:15+0000\n"
+"PO-Revision-Date: 2021-09-07 00:05+0300\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Last-Translator: Hatoon <h.felemban@hotmail.com>\n"
+"Language-Team: \n"
+"X-Generator: Poedit 3.0\n"
+
+#. Translators: message in applications without toolbars
+msgid "No toolbar found"
+msgstr "لا يوجد شريطُ أدوات"
+
+#. Translators: input help mode message for ToolbarsExplorer start command.
+msgid "Starts exploration of toolbars, if present in current application"
+msgstr "بدءُ استكشاف أشرطة الأدوات إذا ظهرت ضمن التطبيق الحالي."
+
+#. Translators: message presented when filtered toolbar has no elements
+msgid "No toolbar item"
+msgstr "لا يوجد عنصر ضمن شريط الأدوات"
+
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on to be shown on installation and add-on information.
+msgid "ToolbarsExplorer"
+msgstr "مستكشفُ أشرطة الأدوات ToolbarsExplorer"
+
+#. Add-on description
+#. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+msgid "Add-on to facilitate toolbars management."
+msgstr "إضافةٌ لتسهيل التعامل مع أشرطة الأدوات."
