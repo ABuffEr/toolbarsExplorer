@@ -25,6 +25,12 @@ addonHandler.initTranslation()
 
 # for compatibility
 REASON_FOCUS = ct.OutputReason.FOCUS if hasattr(ct, "OutputReason") else ct.REASON_FOCUS
+# for pre-2022.1 compatibility
+STATE_INVISIBLE = ct.State.INVISIBLE if hasattr(ct, "State") else ct.STATE_INVISIBLE
+if hasattr(ct, 'Role'):
+	roles = ct.Role
+else:
+	roles = type('Enum', (), dict([(x.split("ROLE_")[1], getattr(ct, x)) for x in dir(ct) if x.startswith("ROLE_")]))
 
 # to enable logging
 DEBUG = False
@@ -90,8 +96,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	scriptCategory = SCRCAT_OBJECTNAVIGATION
 	# roles of objects that could contain a toolbar
 	# splitted in two tuples for probability/performance reasons
-	promisingRoles = (ct.ROLE_APPLICATION, ct.ROLE_WINDOW, ct.ROLE_DIALOG, ct.ROLE_FRAME, ct.ROLE_PAGE, ct.ROLE_PROPERTYPAGE,)
-	lessPromisingRoles = (ct.ROLE_PANE, ct.ROLE_OPTIONPANE, ct.ROLE_BOX, ct.ROLE_GROUPING, ct.ROLE_DIRECTORYPANE, ct.ROLE_GLASSPANE, ct.ROLE_INPUTWINDOW, ct.ROLE_LAYEREDPANE, ct.ROLE_ROOTPANE, ct.ROLE_EDITBAR, ct.ROLE_TERMINAL, ct.ROLE_RICHEDIT, ct.ROLE_SCROLLPANE, ct.ROLE_SPLITPANE, ct.ROLE_VIEWPORT, ct.ROLE_TEXTFRAME, ct.ROLE_INTERNALFRAME, ct.ROLE_DESKTOPPANE, ct.ROLE_PANEL,)
+	promisingRoles = (roles.APPLICATION, roles.WINDOW, roles.DIALOG, roles.FRAME, roles.PAGE, roles.PROPERTYPAGE,)
+	lessPromisingRoles = (roles.PANE, roles.OPTIONPANE, roles.BOX, roles.GROUPING, roles.DIRECTORYPANE, roles.GLASSPANE, roles.INPUTWINDOW, roles.LAYEREDPANE, roles.ROOTPANE, roles.EDITBAR, roles.TERMINAL, roles.RICHEDIT, roles.SCROLLPANE, roles.SPLITPANE, roles.VIEWPORT, roles.TEXTFRAME, roles.INTERNALFRAME, roles.DESKTOPPANE, roles.PANEL,)
 	# toggle about exploration status
 	exploring = False
 
@@ -136,7 +142,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		debugLog("%s toolbars session"%self.curAppName)
 		# root adjustments
 		if self.curAppName in ("calibre",):
-			while curFocus.role != ct.ROLE_WINDOW:
+			while curFocus.role != roles.WINDOW:
 				curFocus = curFocus.simpleParent
 			self.root = curFocus.simpleParent
 		elif self.curAppName in ("thunderbird",):
@@ -166,7 +172,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if self.curAppName in ("soffice",):
 			debugLog("Try bottom-up search")
 			curFocus = api.getFocusObject()
-			self.bottomUpRecursiveSearch(curFocus, ct.ROLE_TOOLBAR)
+			self.bottomUpRecursiveSearch(curFocus, roles.TOOLBAR)
 		# for browsers and other apps where expressSearch regularly fails
 		elif self.curAppName in ("chrome", "calibre",) or self.root.windowClassName in ("MozillaWindowClass",):
 			# use slowSearch for these apps, for now
@@ -189,14 +195,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			bar = getNVDAObjectFromEvent(handle, winUser.OBJID_CLIENT, 0)
 			if not bar:
 				continue
-			if bar.role == ct.ROLE_TOOLBAR:
+			if bar.role == roles.TOOLBAR:
 				self.bars.append(bar)
 			# some handles carry to invisible simpleParent
 			# i.e. in Windows explorer
 			elif not bar.isFocusable and (bar.role in self.promisingRoles or bar.role in self.lessPromisingRoles):
 				# indeed, here child may be a toolbar, and bar its parent
 				for child in bar.children:
-					if child.role == ct.ROLE_TOOLBAR:
+					if child.role == roles.TOOLBAR:
 						self.bars.append(child)
 
 	def slowSearch(self):
@@ -210,7 +216,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		else:
 			rtl = True
 		debugLog("Launching search with rtl=%s, outRoot=%s"%(rtl,outRoot))
-		self.recursiveSearch(self.root, ct.ROLE_TOOLBAR, rtl=rtl, outRoot=outRoot)
+		self.recursiveSearch(self.root, roles.TOOLBAR, rtl=rtl, outRoot=outRoot)
 		# search gives bars in reverse order, so...
 		self.bars.reverse()
 
@@ -234,7 +240,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				(newObj.simpleParent != desktopObject)
 				or
 				# LibreOffice use a non-relative dialog in certain configurations
-				(newObj.role == ct.ROLE_DIALOG and newAppName == self.curAppName)
+				(newObj.role == roles.DIALOG and newAppName == self.curAppName)
 				or
 				# try to manage starting from desktop list
 				(newObj.simpleParent == self.root == desktopObject and (newAppName, self.curAppName) == ("explorer", "csrss"))
@@ -253,7 +259,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			for obj in objList:
 				if obj.role in self.promisingRoles or obj.role in self.lessPromisingRoles:
 					obj = obj.simpleLastChild
-					while obj and (obj.simpleParent != desktopObject or obj.role == ct.ROLE_DIALOG):
+					while obj and (obj.simpleParent != desktopObject or obj.role == roles.DIALOG):
 						newObjList.append(obj)
 						obj = obj.simplePrevious
 				elif obj.role == matchRole:
@@ -271,7 +277,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self.recursiveSearch(obj, matchRole, outRoot=False)
 			debugLog("recursiveSearch finished")
 			self.bars.reverse()
-		elif obj.role == ct.ROLE_TOOLBAR:
+		elif obj.role == roles.TOOLBAR:
 			self.bars.append(obj)
 		if lastDirection in ("next", "up"):
 			nextObj = obj.simpleNext
@@ -340,10 +346,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				(not child)
 				or
 				# Mozilla apps have a toolbar with menubar as first child, purge out
-				(child.role == ct.ROLE_MENUBAR)
+				(child.role == roles.MENUBAR)
 				or
 				# remove Office ribbon menubar
-				(len(bar.children) == 1 and child.name == "Ribbon" and child.role == ct.ROLE_PROPERTYPAGE)
+				(len(bar.children) == 1 and child.name == "Ribbon" and child.role == roles.PROPERTYPAGE)
 			):
 				continue
 			fixedBars.append(bar)
@@ -358,23 +364,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if len(children) == 1:
 			child = bar.simpleFirstChild
 			# useful for Office status toolbar
-			if child.role == ct.ROLE_PROPERTYPAGE:
+			if child.role == roles.PROPERTYPAGE:
 				debugLog("Integrate propertypage items")
 				children = child.children
 		for child in children:
 			if (
 				# exclude invisible and not focusable objects
-				(ct.STATE_INVISIBLE in child.states and not child.isFocusable)
+				(STATE_INVISIBLE in child.states and not child.isFocusable)
 				or
 				# exclude separators and unknown objects
-				(child.role in (ct.ROLE_SEPARATOR, ct.ROLE_UNKNOWN,))
+				(child.role in (roles.SEPARATOR, roles.UNKNOWN,))
 				or
 				# exclude tab control in Mozilla apps
-				(child.role == ct.ROLE_TABCONTROL and child.windowClassName == "MozillaWindowClass")
+				(child.role == roles.TABCONTROL and child.windowClassName == "MozillaWindowClass")
 				or
 				# exclude empty panes and sub-toolbars
 				# but not in Eclipse, where sub-toolbars are buttons
-				(self.curAppName != "eclipse" and child.role in (ct.ROLE_PANE, ct.ROLE_TOOLBAR,) and not child.simpleFirstChild)
+				(self.curAppName != "eclipse" and child.role in (roles.PANE, roles.TOOLBAR,) and not child.simpleFirstChild)
 			):
 				debugLog("Exclude bar item name: %s; role: %d; obj: %s"%(child.name, child.role, child))
 				continue
