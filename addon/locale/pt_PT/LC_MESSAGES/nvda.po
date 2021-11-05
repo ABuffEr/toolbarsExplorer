@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: toolbarsExplorer 1.0-20180914-dev\n"
 "Report-Msgid-Bugs-To: nvda-translations@groups.io\n"
 "POT-Creation-Date: 2018-10-26 20:10+1000\n"
-"PO-Revision-Date: 2020-06-23 21:07+0100\n"
+"PO-Revision-Date: 2021-10-30 22:52+0100\n"
 "Language: pt_PT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Last-Translator: Ângelo Abrantes <ampa4374@gmail.com>\n"
 "Language-Team: \n"
-"X-Generator: Poedit 2.3.1\n"
+"X-Generator: Poedit 3.0\n"
 
 #. Translators: message in applications without toolbars
 msgid "No toolbar found"
@@ -37,4 +37,4 @@ msgstr "Explorador de barras de ferramentas"
 #. Add-on description
 #. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 msgid "Add-on to facilitate toolbars management."
-msgstr "Extra para facilitar a utilização das barras de ferramentas"
+msgstr "Extra para facilitar a utilização das barras de ferramentas."
