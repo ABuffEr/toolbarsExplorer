@@ -76,12 +76,16 @@ def runWithoutUiMessage(func, *args, **kwargs):
 	import config
 	from versionInfo import version_year as mainVersion
 	curSpeechMode = speech.speechMode if mainVersion<2021 else speech.getState().speechMode
-	configBackup = {"voice": curSpeechMode, "braille": config.conf["braille"]["messageTimeout"]}
+	msgTimeout = config.conf["braille"]["messageTimeout"] if mainVersion<2023 else config.conf["braille"]["showMessages"]
+	configBackup = {"voice": curSpeechMode, "braille": msgTimeout}
 	if mainVersion<2021:
 		speech.speechMode = speech.speechMode_off
 	else:
 		speech.setSpeechMode(speech.SpeechMode.off)
-	config.conf["braille"]._cacheLeaf("messageTimeout", None, 0)
+	if mainVersion<2023:
+		config.conf["braille"]._cacheLeaf("messageTimeout", None, 0)
+	else:
+		config.conf["braille"]._cacheLeaf("showMessages", None, 0)
 	try:
 		func(*args, **kwargs)
 	finally:
@@ -89,7 +93,10 @@ def runWithoutUiMessage(func, *args, **kwargs):
 			speech.speechMode = configBackup["voice"]
 		else:
 			speech.setSpeechMode(configBackup["voice"])
-		config.conf["braille"]._cacheLeaf("messageTimeout", None, configBackup["braille"])
+		if mainVersion<2023:
+			config.conf["braille"]._cacheLeaf("messageTimeout", None, configBackup["braille"])
+		else:
+			config.conf["braille"]._cacheLeaf("showMessages", None, configBackup["braille"])
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
