@@ -6,14 +6,14 @@
 
 Tämä lisäosa helpottaa sovellusten työkalupalkkien käyttöä tarjoten
 objektinavigoinnista lähtöisin olevan selausmallin yksinkertaistetuilla
-syötekomennoilla.
+näppäinkomennoilla.
 
 ## Komennot
 
 * Alt+Sovellusnäppäin: aloittaa työkalupalkkien selauksen<br/>
-(näppäinkomennon uudelleenmäärittäminen on mahdollista NVDA:n Syötekomennot-valintaikkunan Objektinavigointi-kategoriasta).
+(näppäinkomennon uudelleenmäärittäminen on mahdollista NVDA:n Näppäinkomennot-valintaikkunan Objektinavigointi-kategoriasta).
 
-Seuraavat syötekomennot ovat käytettävissä:
+Seuraavat näppäinkomennot ovat käytettävissä:
 
 * Nuoli vasemmalle/oikealle: siirtää edelliseen/seuraavaan työkalupalkkiin;
 * Nuoli ylös/alas: vierittää nykyisen työkalupalkin kohteita ylös/alas;
@@ -25,7 +25,7 @@ Seuraavat syötekomennot ovat käytettävissä:
 * Esc: poistuu työkalupalkkien selaustilasta.
 
 Työkalupalkeille tai niiden kohteille on lisäksi mahdollista suorittaa
-toimintoja millä tahansa NVDA:n tarjoamilla syötekomennoilla, aivan kuten
+toimintoja millä tahansa NVDA:n tarjoamilla näppäinkomennoilla, aivan kuten
 siirryttäessä objekteihin objektinavigointia käyttäen.
 
 ## Huomautuksia
