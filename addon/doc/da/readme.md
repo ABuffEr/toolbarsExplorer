@@ -53,6 +53,6 @@ skift, skift+h, Ctrl+z) gør ingenting.
 
 [[!tag dev stable]]
 
-[1]: https://addons.nvda-project.org/files/get.php?file=tbx
+[1]: https://www.nvaccess.org/addonStore/legacy?file=tbx
 
-[2]: https://addons.nvda-project.org/files/get.php?file=tbx-dev
+[2]: https://www.nvaccess.org/addonStore/legacy?file=tbx-dev
