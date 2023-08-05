@@ -2,7 +2,6 @@
 
 * Author: Alberto Buffolino
 * Download [stable version][1]
-* Download [development version][2]
 
 This add-on makes easier to use toolbars in applications, providing an exploration model derived by object navigation, with simplified gestures.
 
@@ -37,6 +36,4 @@ Other gestures not containing alt, windows or escape (as h, 1, shift, shift+h, c
 * In LibreOffice, best configuration is probably default or single toolbar, set it on view menu/toolbar position.
 
 
-[1]: https://addons.nvda-project.org/files/get.php?file=tbx
-
-[2]: https://addons.nvda-project.org/files/get.php?file=tbx-dev
+[1]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer
