@@ -4,15 +4,14 @@
 * [Stabile Version herunterladen][1]
 * [Entwicklerversion herunterladen][2]
 
-Diese Erweiterung erleichtert die Verwendung von Symbolleisten in
+Diese NVDA-Erweiterung erleichtert die Verwendung von Symbolleisten in
 Anwendungen und bietet ein Erkundungsmodell, das durch Objektnavigation mit
-vereinfachten Gesten abgeleitet wird.
+vereinfachten Tastenbefehlen abgeleitet wird.
 
 ## Befehle
 
-* Alt+Anwendungstaste (alt+kontextmenütaste): Startet die Erkundung der Symbolleisten<br/>.
-(Sie können den tastenbefehl unter dem Dialog "Eingaben" unter Objektnavigation neu zuordnen).
-.)
+* Alt+Anwendungstaste: Startet die Erkundung der Symbolleisten<br/>
+(Den Tastenbefehl können Sie unter dem Dialog "Eingaben" unter Objekt-Navigation neu zuordnen).
 
 Während der Erkundung stehen folgende Gesten zur Verfügung:
 
@@ -56,6 +55,6 @@ Umschalt, Umschalt+H, Strg+Z) führen zu keiner Aktion.
 
 [[!tag dev stable]]
 
-[1]: https://www.nvaccess.org/addonStore/legacy?file=tbx
+[1]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer
 
-[2]: https://www.nvaccess.org/addonStore/legacy?file=tbx-dev
+[2]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer-dev

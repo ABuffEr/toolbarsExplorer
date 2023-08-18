@@ -53,6 +53,6 @@ Muut komennot, joihin ei sisälly Alt-, Windows- tai Esc-näppäintä (kuten H,
 
 [[!tag dev stable]]
 
-[1]: https://www.nvaccess.org/addonStore/legacy?file=tbx
+[1]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer
 
-[2]: https://www.nvaccess.org/addonStore/legacy?file=tbx-dev
+[2]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer-dev
