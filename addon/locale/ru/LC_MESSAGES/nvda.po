@@ -6,36 +6,43 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: toolbarsExplorer 1.0-20180914-dev\n"
-"Report-Msgid-Bugs-To: nvda-translations@groups.io\n"
-"POT-Creation-Date: 2018-11-23 20:10+1000\n"
-"PO-Revision-Date: 2019-02-02 15:22+0100\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Report-Msgid-Bugs-To: 'nvda-translations@groups.io'\n"
+"POT-Creation-Date: 2024-06-20 23:30+0300\n"
+"PO-Revision-Date: 2024-06-20 23:33+0300\n"
+"Last-Translator: Ruslan Kolodyazhni <rupelodn@gmail.com>\n"
+"Language-Team: Translators <nvda-translations@groups.io>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 1.6.10\n"
+"X-Generator: Poedit 3.4.2\n"
 
 #. Translators: message in applications without toolbars
+#: addon\globalPlugins\toolbarsExplorer\__init__.py:316
 msgid "No toolbar found"
-msgstr "Не найдено панели инструментов"
+msgstr "Панель инструментов не найдена"
 
 #. Translators: input help mode message for ToolbarsExplorer start command.
+#: addon\globalPlugins\toolbarsExplorer\__init__.py:340
 msgid "Starts exploration of toolbars, if present in current application"
 msgstr ""
-"Начинает обзор панелей инструментов, если те же самые существуют в программе"
+"Запускает просмотр панелей инструментов, если они присутствуют в текущем "
+"приложении"
 
 #. Translators: message presented when filtered toolbar has no elements
+#: addon\globalPlugins\toolbarsExplorer\__init__.py:486
 msgid "No toolbar item"
 msgstr "Нет элемента панели инструментов"
 
 #. Add-on summary, usually the user visible name of the addon.
-#. Translators: Summary for this add-on to be shown on installation and add-on information.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+#: buildVars.py:23
 msgid "ToolbarsExplorer"
 msgstr "ToolbarsExplorer"
 
 #. Add-on description
 #. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+#: buildVars.py:26
 msgid "Add-on to facilitate toolbars management."
-msgstr "Дополнение, которое даёт возможность управлять панелями инструментов."
+msgstr "Дополнение для облегчения управления панелями инструментов."
