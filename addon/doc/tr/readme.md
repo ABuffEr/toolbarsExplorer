@@ -29,7 +29,7 @@ ettiğinizde olduğu gibi, NVDA tarafından sağlanan herhangi bir hareketi
 kullanarak araç çubukları veya öğeleri üzerinde eylemler
 gerçekleştirebilirsiniz.
 
-## notlar
+## Notlar
 
 Keşif, esc tuşuna basılarak doğrudan sonlandırılır ve dolaylı olarak:
 
@@ -38,8 +38,8 @@ Keşif, esc tuşuna basılarak doğrudan sonlandırılır ve dolaylı olarak:
 * mevcut araç çubuğu nesnelerinden ayrılmaya neden olan bir harekete basarak
   (alt, windows, tab, NVDA+F1, nesne dolaşım hareketleri vb.).
 
-alt, windows veya esc tuşunu içermeyen diğer hareketler (h, 1, shift,
-shift+h, control+z gibi) hiçbir şey yapmaz.
+Alt, windows veya escape içermeyen diğer hareketler (h, 1, shift, shift+h,
+control+z gibi) hiçbir şey yapmaz.
 
 ## Öneriler
 
@@ -52,6 +52,6 @@ shift+h, control+z gibi) hiçbir şey yapmaz.
 
 [[!tag dev stable]]
 
-[1]: https://www.nvaccess.org/addonStore/legacy?file=tbx
+[1]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer
 
-[2]: https://www.nvaccess.org/addonStore/legacy?file=tbx-dev
+[2]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer-dev

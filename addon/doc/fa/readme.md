@@ -50,6 +50,6 @@ shift+h, control+z) simply does nothing.
 
 [[!tag dev stable]]
 
-[1]: https://www.nvaccess.org/addonStore/legacy?file=tbx
+[1]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer
 
-[2]: https://www.nvaccess.org/addonStore/legacy?file=tbx-dev
+[2]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer-dev

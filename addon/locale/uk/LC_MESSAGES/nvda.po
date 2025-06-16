@@ -19,24 +19,29 @@ msgstr ""
 "X-Generator: Poedit 3.2.2\n"
 
 #. Translators: message in applications without toolbars
+#: addon\globalPlugins\toolbarsExplorer\__init__.py:309
 msgid "No toolbar found"
 msgstr "Панель інструментів не знайдено"
 
 #. Translators: input help mode message for ToolbarsExplorer start command.
+#: addon\globalPlugins\toolbarsExplorer\__init__.py:333
 msgid "Starts exploration of toolbars, if present in current application"
 msgstr "Починає дослідження панелей інструментів, якщо вони присутні в поточній програмі"
 
 #. Translators: message presented when filtered toolbar has no elements
+#: addon\globalPlugins\toolbarsExplorer\__init__.py:479
 msgid "No toolbar item"
 msgstr "Немає елемента панелі інструментів"
 
 #. Add-on summary, usually the user visible name of the addon.
 #. Translators: Summary for this add-on
 #. to be shown on installation and add-on information found in Add-ons Manager.
+#: buildVars.py:23
 msgid "ToolbarsExplorer"
 msgstr "Провідник панелей інструментів"
 
 #. Add-on description
 #. Translators: Long description to be shown for this add-on on add-on information from add-ons manager
+#: buildVars.py:26
 msgid "Add-on to facilitate toolbars management."
 msgstr "Додаток для полегшення керування панелями інструментів."
