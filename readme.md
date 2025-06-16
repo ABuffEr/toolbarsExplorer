@@ -1,7 +1,6 @@
 # ToolbarsExplorer
 
 * Author: Alberto Buffolino
-* Download [stable version][1]
 
 This add-on makes easier to use toolbars in applications, providing an exploration model derived by object navigation, with simplified gestures.
 
@@ -35,5 +34,3 @@ Other gestures not containing alt, windows or escape (as h, 1, shift, shift+h, c
 * The add-on may fail in Mozilla applications the first time after add-on installation/update; please restart NVDA and Mozilla applications to resolve;
 * In LibreOffice, best configuration is probably default or single toolbar, set it on view menu/toolbar position.
 
-
-[1]: https://www.nvaccess.org/addonStore/legacy?file=toolbarsExplorer
