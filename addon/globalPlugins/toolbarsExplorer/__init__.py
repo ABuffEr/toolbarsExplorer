@@ -333,6 +333,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self.bindGesture("kb:space", "objLeftClick")
 		self.bindGesture("kb:applications", "objRightClick")
 		self.bindGesture("kb:shift+f10", "objRightClick")
+		# gestures+control for non-terminating scripts
+		self.bindGesture("kb:control+enter", "objActivateWithoutFinish")
+		self.bindGesture("kb:control+space", "objLeftClickWithoutFinish")
+		self.bindGesture("kb:control+applications", "objRightClickWithoutFinish")
+		self.bindGesture("kb:control+shift+f10", "objRightClickWithoutFinish")
 		bar = self.bars[self.barIndex]
 		api.setNavigatorObject(bar)
 		speech.speakObject(bar, reason=REASON_FOCUS)
@@ -428,7 +433,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def script_finish(self, gesture):
 		self.finish(restoreMode=True, restoreObjects=True)
-#	script_finish.__doc__ = _("terminates toolbars exploration")
 
 	def finish(self, restoreMode=False, restoreObjects=False):
 		self.exploring = False
@@ -487,32 +491,44 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return
 		api.setNavigatorObject(newObj)
 		speech.speakObject(newObj, reason=REASON_FOCUS)
-#	script_explore.__doc__ = _("moves between toolbars and their items")
+
+	def performAction(self, action, gesture, finish=True):
+		if finish:
+			# we have finished, regardless action result
+			self.finish(restoreMode=True)
+		runWithoutUiMessage(action, gesture)
 
 	def script_objActivate(self, gesture):
-		# we have finished, regardless action result
-		self.finish(restoreMode=True)
 		# invoke activate action on current toolbar item
-		runWithoutUiMessage(commands.script_review_activate, gesture)
-#	script_objActivate.__doc__ = _("performs default action on selected toolbar or its item")
+		self.performAction(commands.script_review_activate, gesture)
 
 	def script_objLeftClick(self, gesture):
 		# move mouse to current toolbar item
-		runWithoutUiMessage(commands.script_moveMouseToNavigatorObject, gesture)
-		# we have finished, regardless action result
-		self.finish(restoreMode=True)
+		self.performAction(commands.script_moveMouseToNavigatorObject, gesture, False)
 		# click!
-		runWithoutUiMessage(commands.script_leftMouseClick, gesture)
-#	script_objLeftClick.__doc__ = _("performs mouse left click on selected toolbar or its item")
+		self.performAction(commands.script_leftMouseClick, gesture)
 
 	def script_objRightClick(self, gesture):
 		# move mouse to current toolbar item
-		runWithoutUiMessage(commands.script_moveMouseToNavigatorObject, gesture)
-		# we have finished, regardless action result
-		self.finish(restoreMode=True)
+		self.performAction(commands.script_moveMouseToNavigatorObject, gesture, False)
 		# click!
-		runWithoutUiMessage(commands.script_rightMouseClick, gesture)
-#	script_objRightClick.__doc__ = _("performs mouse right click on selected toolbar or its item")
+		self.performAction(commands.script_rightMouseClick, gesture)
+
+	def script_objActivateWithoutFinish(self, gesture):
+		# invoke activate action on current toolbar item
+		self.performAction(commands.script_review_activate, gesture, False)
+
+	def script_objLeftClickWithoutFinish(self, gesture):
+		# move mouse to current toolbar item
+		self.performAction(commands.script_moveMouseToNavigatorObject, gesture, False)
+		# click!
+		self.performAction(commands.script_leftMouseClick, gesture, False)
+
+	def script_objRightClickWithoutFinish(self, gesture):
+		# move mouse to current toolbar item
+		self.performAction(commands.script_moveMouseToNavigatorObject, gesture, False)
+		# click!
+		self.performAction(commands.script_rightMouseClick, gesture, False)
 
 	def getScript(self, gesture):
 		if not self.exploring:
