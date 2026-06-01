@@ -74,7 +74,10 @@ def findAllDescendantWindows(parent, visible=None, controlID=None, className=Non
 # to avoid code copying to exclude ui.message
 def runWithoutUiMessage(func, *args, **kwargs):
 	import config
-	from versionInfo import version_year as mainVersion
+	try:
+		from buildVersion import version_year as mainVersion
+	except:
+		from versionInfo import version_year as mainVersion
 	curSpeechMode = speech.speechMode if mainVersion<2021 else speech.getState().speechMode
 	msgTimeout = config.conf["braille"]["messageTimeout"] if mainVersion<2023 else config.conf["braille"]["showMessages"]
 	configBackup = {"voice": curSpeechMode, "braille": msgTimeout}
